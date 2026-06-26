@@ -24,6 +24,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: rm -rf node_modules/.astro
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
