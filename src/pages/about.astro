@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Prompt from '../components/Prompt.astro';
 ---
 
-<BaseLayout title="about" description="Mr.Anderson hakkında">
+<BaseLayout title="about" description="about Mr.Anderson">
   <Prompt command="man about" />
 
   <div class="manpage">
@@ -14,13 +14,13 @@ import Prompt from '../components/Prompt.astro';
 
     <section>
       <h2>SYNOPSIS</h2>
-      <p class="indent"><span class="cmd">pgah</span> [--projeler] [--iletisim] [--blog]</p>
+      <p class="indent"><span class="cmd">pgah</span> [--projects] [--contact] [--blog]</p>
     </section>
 
     <section>
       <h2>DESCRIPTION</h2>
       <p class="indent">
-        Merhaba. Ben Mr.Anderson. Yazılım geliştirici ve bu blogu yazıyorum.
+        Hi. I'm Mr.Anderson. Software developer, writing this blog.
       </p>
     </section>
 
@@ -40,7 +40,7 @@ import Prompt from '../components/Prompt.astro';
 
     <section>
       <h2>SEE ALSO</h2>
-      <p class="indent"><a href="/">posts(1)</a>, <a href="/rss.xml">rss(5)</a></p>
+      <p class="indent"><a href="/">blogs(1)</a>, <a href="/rss.xml">rss(5)</a></p>
     </section>
   </div>
 </BaseLayout>
