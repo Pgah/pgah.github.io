@@ -1,0 +1,59 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Prompt from '../components/Prompt.astro';
+
+interface Props {
+  title: string;
+  date: Date;
+  description: string;
+  tags: string[];
+}
+
+const { title, date, description, tags } = Astro.props;
+const slug = Astro.url.pathname.replace('/posts/', '').replace(/\/$/, '').replace(/\/$/, '');
+const dateStr = date.toISOString().split('T')[0];
+---
+
+<BaseLayout title={title} description={description}>
+  <Prompt path="~/posts" command={`cat ${slug}.md`} />
+
+  <div class="post-meta">
+    <span class="meta-comment"># {title}</span>
+    <span class="meta-comment"># date: {dateStr}</span>
+    {tags.length > 0 && (
+      <span class="meta-comment"># tags: {tags.join(', ')}</span>
+    )}
+  </div>
+
+  <hr />
+
+  <article>
+    <slot />
+  </article>
+
+  <hr />
+
+  <a href="/" class="back">cd ..</a>
+</BaseLayout>
+
+<style>
+.post-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 1rem;
+}
+.meta-comment {
+  color: var(--fg-dim);
+  font-size: 0.9rem;
+}
+.back {
+  display: inline-block;
+  margin-top: 1rem;
+  color: var(--fg-dim);
+}
+.back:hover {
+  color: var(--fg-bright);
+  text-decoration: none;
+}
+</style>

@@ -1,0 +1,25 @@
+---
+interface Props {
+  path?: string;
+  command: string;
+}
+const { path = '~', command } = Astro.props;
+---
+
+<div class="prompt-line">
+  <span class="prompt-user">emre@pgah</span><span class="prompt-sep">:</span><span class="prompt-path">{path}</span><span class="prompt-dollar">$</span>
+  <span class="prompt-cmd">{command}</span>
+</div>
+
+<style>
+.prompt-line {
+  margin-bottom: 1rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.prompt-user  { color: var(--fg-bright); }
+.prompt-sep   { color: var(--fg-dim); }
+.prompt-path  { color: var(--cyan); }
+.prompt-dollar { color: var(--fg); margin: 0 0.5ch; }
+.prompt-cmd   { color: var(--fg); }
+</style>

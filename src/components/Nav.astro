@@ -1,0 +1,36 @@
+---
+const current = Astro.url.pathname;
+---
+
+<nav>
+  <span class="nav-prompt">$ ls ~/</span>
+  <span class="nav-arrow">→</span>
+  <a href="/" class={current === '/' ? 'active' : ''}>posts/</a>
+  <a href="/about" class={current === '/about' ? 'active' : ''}>about</a>
+  <a href="/rss.xml" target="_blank">rss.xml</a>
+</nav>
+
+<style>
+nav {
+  margin-bottom: 2.5rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 1ch;
+  border-bottom: 1px solid var(--fg-muted);
+  padding-bottom: 1rem;
+}
+.nav-prompt { color: var(--fg-dim); }
+.nav-arrow  { color: var(--fg-muted); }
+nav a {
+  color: var(--fg-dim);
+}
+nav a:hover {
+  color: var(--fg-bright);
+  text-decoration: none;
+}
+nav a.active {
+  color: var(--fg-bright);
+  text-decoration: underline;
+}
+</style>

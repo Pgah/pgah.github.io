@@ -1,0 +1,89 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Prompt from '../components/Prompt.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<BaseLayout title="posts">
+  <Prompt command="ls -la ~/posts/" />
+
+  <div class="listing">
+    <div class="listing-header">
+      <span class="col-perm">permissions</span>
+      <span class="col-date">date</span>
+      <span class="col-name">name</span>
+    </div>
+
+    {posts.map((post) => {
+      const dateStr = post.data.date.toISOString().split('T')[0];
+      return (
+        <div class="listing-row">
+          <span class="col-perm perm">-rw-r--r--</span>
+          <span class="col-date date">{dateStr}</span>
+          <a class="col-name" href={`/posts/${post.id}`}>
+            {post.id}
+          </a>
+          <span class="col-desc">&quot;{post.data.title}&quot;</span>
+        </div>
+      );
+    })}
+
+    {posts.length === 0 && (
+      <div class="empty">
+        <span class="date">henüz post yok.</span>
+      </div>
+    )}
+  </div>
+
+  <div class="cursor-line">
+    <span class="prompt-dim">emre@pgah:~/posts$</span> <span class="cursor">&#x2588;</span>
+  </div>
+</BaseLayout>
+
+<style>
+.listing {
+  width: 100%;
+  margin-bottom: 2rem;
+}
+.listing-header {
+  display: grid;
+  grid-template-columns: 12ch 12ch 1fr;
+  gap: 0 2ch;
+  color: var(--fg-muted);
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--fg-muted);
+}
+.listing-row {
+  display: grid;
+  grid-template-columns: 12ch 12ch 24ch 1fr;
+  gap: 0 2ch;
+  padding: 0.15rem 0;
+  align-items: baseline;
+}
+.perm  { color: var(--fg-muted); }
+.date  { color: var(--fg-dim); }
+.col-name { color: var(--fg-bright); }
+.col-desc { color: var(--fg-dim); font-size: 0.9rem; }
+.cursor-line {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5ch;
+}
+.prompt-dim { color: var(--fg-dim); }
+
+@media (max-width: 600px) {
+  .listing-header { display: none; }
+  .listing-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-bottom: 1rem;
+  }
+  .perm { display: none; }
+}
+</style>

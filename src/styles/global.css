@@ -1,0 +1,120 @@
+:root {
+  --bg:        #0e0900;
+  --bg-soft:   #1a1000;
+  --fg:        #ffb000;
+  --fg-dim:    #a07000;
+  --fg-bright: #ffd060;
+  --fg-muted:  #6a4a00;
+  --red:       #ff4444;
+  --green:     #44ff88;
+  --cyan:      #00ccff;
+  --font:      'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+  --width:     72ch;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  padding: 2rem 1.5rem 4rem;
+}
+
+main {
+  max-width: var(--width);
+  margin: 0 auto;
+}
+
+a {
+  color: var(--fg-bright);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #fff;
+}
+
+h1, h2, h3 {
+  color: var(--fg-bright);
+  font-weight: normal;
+  margin: 1.5rem 0 0.5rem;
+}
+
+h1 { font-size: 1.3rem; }
+h2 { font-size: 1.1rem; }
+
+p { margin-bottom: 1rem; }
+
+ul, ol {
+  padding-left: 2ch;
+  margin-bottom: 1rem;
+}
+
+li { margin-bottom: 0.25rem; }
+
+code {
+  background: var(--bg-soft);
+  color: var(--fg-bright);
+  padding: 0.1em 0.4em;
+  border-radius: 2px;
+  font-size: 0.9em;
+}
+
+pre {
+  background: var(--bg-soft) !important;
+  border-left: 2px solid var(--fg-muted);
+  padding: 1rem;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  font-size: 0.9em;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+blockquote {
+  border-left: 2px solid var(--fg-muted);
+  padding-left: 1rem;
+  color: var(--fg-dim);
+  margin-bottom: 1rem;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--fg-muted);
+  margin: 2rem 0;
+}
+
+::selection {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+::-webkit-scrollbar { width: 6px; background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--fg-muted); }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.cursor {
+  display: inline-block;
+  animation: blink 1s step-end infinite;
+  color: var(--fg);
+}

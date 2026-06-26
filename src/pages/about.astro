@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Prompt from '../components/Prompt.astro';
+---
+
+<BaseLayout title="about" description="emre hakkında">
+  <Prompt command="man about" />
+
+  <div class="manpage">
+    <section>
+      <h2>NAME</h2>
+      <p class="indent">emre (pgah) — yazılım geliştirici, teknik yazar</p>
+    </section>
+
+    <section>
+      <h2>SYNOPSIS</h2>
+      <p class="indent"><span class="cmd">pgah</span> [--projeler] [--iletisim] [--blog]</p>
+    </section>
+
+    <section>
+      <h2>DESCRIPTION</h2>
+      <p class="indent">
+        Merhaba. Ben Emre. Yazılım geliştirici ve bu blogu yazıyorum.
+        Teknik konular, araçlar ve deneyimler hakkında yazıyorum.
+      </p>
+    </section>
+
+    <section>
+      <h2>OPTIONS</h2>
+      <div class="options">
+        <div class="option-row">
+          <span class="flag">--github</span>
+          <a href="https://github.com/pgah" target="_blank">github.com/pgah</a>
+        </div>
+        <div class="option-row">
+          <span class="flag">--blog</span>
+          <a href="/">pgah.github.io</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>SEE ALSO</h2>
+      <p class="indent"><a href="/">posts(1)</a>, <a href="/rss.xml">rss(5)</a></p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+.manpage section {
+  margin-bottom: 1.5rem;
+}
+.manpage h2 {
+  color: var(--fg-bright);
+  font-size: 1rem;
+  margin: 0 0 0.4rem;
+  letter-spacing: 0.05em;
+}
+.indent {
+  padding-left: 4ch;
+}
+.cmd {
+  color: var(--fg-bright);
+}
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-left: 4ch;
+}
+.option-row {
+  display: grid;
+  grid-template-columns: 16ch 1fr;
+  gap: 0 2ch;
+}
+.flag {
+  color: var(--fg-dim);
+}
+</style>
