@@ -67,18 +67,19 @@ const lines = [
   'heap spray 0x0c0c0c0c',
 ];
 
-const fontSize = 12;
+const fontSize = 14;
+const colWidth = 220;
 type Column = { text: string; pos: number; speed: number; charIdx: number };
 let columns: Column[] = [];
 
 function resize() {
   canvas.width  = window.innerWidth;
   canvas.height = window.innerHeight;
-  const colCount = Math.floor(canvas.width / (fontSize * 10));
+  const colCount = Math.floor(canvas.width / colWidth);
   columns = Array.from({ length: colCount }, (_, i) => ({
     text:    lines[Math.floor(Math.random() * lines.length)],
     pos:     Math.random() * canvas.height * 0.5,
-    speed:   1.5 + Math.random() * 2.0,
+    speed:   1.2 + Math.random() * 1.5,
     charIdx: 0,
   }));
 }
@@ -101,10 +102,8 @@ function draw() {
 
   ctx.font = `${fontSize}px 'Courier New', monospace`;
 
-  const colWidth = canvas.width / columns.length;
-
   columns.forEach((col, i) => {
-    const x = i * colWidth;
+    const x = i * colWidth + 8;
     const chars = col.text.split('');
     const totalH = chars.length * fontSize;
     const headY = col.pos;
@@ -135,7 +134,7 @@ function draw() {
     if (col.pos - totalH > canvas.height) {
       col.text  = lines[Math.floor(Math.random() * lines.length)];
       col.pos   = -fontSize * 5;
-      col.speed = 1.5 + Math.random() * 2.0;
+      col.speed = 1.2 + Math.random() * 1.5;
     }
   });
 }
@@ -152,6 +151,6 @@ setInterval(draw, 40);
   height: 100%;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.45;
+  opacity: 0.75;
 }
 </style>
