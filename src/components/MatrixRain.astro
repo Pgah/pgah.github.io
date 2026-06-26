@@ -38,15 +38,15 @@ function draw() {
     ctx.fillStyle = '#fff8e0';
     ctx.fillText(char, x, y);
 
-    // Bir önceki satır: parlak amber
-    ctx.fillStyle = '#ffd060';
+    // Bir önceki satır: parlak sarı
+    ctx.fillStyle = '#f5e840';
     ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize);
 
     // Geri kalanlar soluklaşıyor
-    ctx.fillStyle = '#ffb000';
+    ctx.fillStyle = '#e8d000';
     ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize * 2);
 
-    ctx.fillStyle = '#a07000';
+    ctx.fillStyle = '#a09000';
     ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize * 3);
 
     if (y > canvas.height && Math.random() > 0.975) {

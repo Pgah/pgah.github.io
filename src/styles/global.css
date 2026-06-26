@@ -1,10 +1,10 @@
 :root {
-  --bg:        #0e0900;
-  --bg-soft:   #1a1000;
-  --fg:        #ffb000;
-  --fg-dim:    #a07000;
-  --fg-bright: #ffd060;
-  --fg-muted:  #6a4a00;
+  --bg:        #0a0a00;
+  --bg-soft:   #141400;
+  --fg:        #e8d000;
+  --fg-dim:    #a09000;
+  --fg-bright: #f5e840;
+  --fg-muted:  #6a6000;
   --red:       #ff4444;
   --green:     #44ff88;
   --cyan:      #00ccff;
