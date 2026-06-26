@@ -33,8 +33,10 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
     })}
 
     {posts.length === 0 && (
-      <div class="empty">
-        <span class="date">henüz post yok.</span>
+      <div class="listing-row empty-row">
+        <span class="col-perm perm">──────────</span>
+        <span class="col-date date">──────────</span>
+        <span class="col-name muted">──────────</span>
       </div>
     )}
   </div>
@@ -73,6 +75,7 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
   align-items: baseline;
 }
 .perm  { color: var(--fg-muted); }
+.muted { color: var(--fg-muted); }
 .date  { color: var(--fg-dim); }
 .col-name { color: var(--fg-bright); }
 .col-desc { color: var(--fg-dim); font-size: 0.9rem; }
