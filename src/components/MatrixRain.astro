@@ -7,136 +7,53 @@
 const canvas = document.getElementById('matrix-canvas') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
 
-const lines = [
-  'sudo apt-get update',
-  'chmod +x exploit.sh',
-  'ssh root@192.168.1.1',
-  'nmap -sV -p 1-65535',
-  'grep -r "password" /',
-  'cat /etc/passwd',
-  'ls -la /var/log',
-  'netstat -tulpn',
-  'ps aux | grep root',
-  'curl -s http://target',
-  'wget --mirror site.com',
-  'iptables -L -n -v',
-  'find / -perm -4000',
-  'tcpdump -i eth0 -w',
-  'john --wordlist=rockyou',
-  'hydra -l admin -P pass',
-  'git clone --depth 1',
-  'docker run -it --rm',
-  'gcc -o shell shell.c',
-  'python3 -m http.server',
-  'dd if=/dev/zero of=disk',
-  'openssl enc -aes-256',
-  'base64 -d payload.txt',
-  'xxd /dev/mem | head',
-  'strace -p $(pgrep ssh)',
-  'ltrace ./binary 2>&1',
-  'objdump -d /bin/bash',
-  'gdb -q ./vulnerable',
-  'nc -lvnp 4444',
-  'mkfifo /tmp/f; cat /tmp/f',
-  'export PATH=$PATH:/tmp',
-  'echo $HISTFILE',
-  'unset HISTFILE',
-  'rm -rf /tmp/.hidden',
-  'mount /dev/sda1 /mnt',
-  'fdisk -l /dev/sda',
-  'lsof -i :80',
-  'kill -9 $(lsof -ti:80)',
-  'crontab -e',
-  '*/5 * * * * /tmp/.x',
-  'awk -F: "{print $1}" /etc/passwd',
-  'sed -i "s/root/toor/" file',
-  'tr -d "\\n" < input.txt',
-  'cut -d: -f1,3 /etc/passwd',
-  '0x41414141',
-  '0xdeadbeef',
-  '0x7fffffff',
-  'AAAAAAAAAAAAAAAA',
-  '/bin/sh -i >& /dev/tcp/',
-  'bash -i >& /dev/tcp/10.0',
-  'import socket,subprocess',
-  'int 0x80',
-  'JMP ESP',
-  'NOP sled...',
-  'RET 0x08049A20',
-  'SEH overwrite',
-  'heap spray 0x0c0c0c0c',
-];
+// Karakterler Linux/siber komutlardan çıkarıldı
+const chars = 'abcdefghijklmnopqrstuvwxyz0123456789/\\-_.@$#!|&><=+*%[]{}();:'.split('');
 
 const fontSize = 14;
-const colWidth = 220;
-type Column = { text: string; pos: number; speed: number; charIdx: number };
-let columns: Column[] = [];
+let drops: number[] = [];
 
 function resize() {
   canvas.width  = window.innerWidth;
   canvas.height = window.innerHeight;
-  const colCount = Math.floor(canvas.width / colWidth);
-  columns = Array.from({ length: colCount }, (_, i) => ({
-    text:    lines[Math.floor(Math.random() * lines.length)],
-    pos:     Math.random() * canvas.height * 0.5,
-    speed:   1.2 + Math.random() * 1.5,
-    charIdx: 0,
-  }));
+  const colCount = Math.floor(canvas.width / fontSize);
+  drops = Array.from({ length: colCount }, () => Math.random() * (canvas.height / fontSize));
 }
 
 resize();
 window.addEventListener('resize', resize);
 
-// Amber renk paleti — sitenin renkleriyle aynı
-const colors = {
-  head:   '#fff8e0',          // en parlak (baş karakter)
-  bright: '#ffd060',          // --fg-bright
-  main:   '#ffb000',          // --fg
-  dim:    '#a07000',          // --fg-dim
-  muted:  '#6a4a00',          // --fg-muted
-};
-
 function draw() {
-  ctx.fillStyle = 'rgba(14, 9, 0, 0.06)';
+  ctx.fillStyle = 'rgba(14, 9, 0, 0.05)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.font = `${fontSize}px 'Courier New', monospace`;
 
-  columns.forEach((col, i) => {
-    const x = i * colWidth + 8;
-    const chars = col.text.split('');
-    const totalH = chars.length * fontSize;
-    const headY = col.pos;
+  for (let i = 0; i < drops.length; i++) {
+    const char = chars[Math.floor(Math.random() * chars.length)];
+    const x = i * fontSize;
+    const y = drops[i] * fontSize;
 
-    chars.forEach((ch, j) => {
-      const y = headY - (chars.length - 1 - j) * fontSize;
-      if (y < -fontSize || y > canvas.height) return;
+    // Baş karakter: beyazımsı
+    ctx.fillStyle = '#fff8e0';
+    ctx.fillText(char, x, y);
 
-      const distFromHead = chars.length - 1 - j;
+    // Bir önceki satır: parlak amber
+    ctx.fillStyle = '#ffd060';
+    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize);
 
-      if (distFromHead === 0) {
-        ctx.fillStyle = colors.head;
-      } else if (distFromHead < 3) {
-        ctx.fillStyle = colors.bright;
-      } else if (distFromHead < 8) {
-        ctx.fillStyle = colors.main;
-      } else if (distFromHead < 14) {
-        ctx.fillStyle = colors.dim;
-      } else {
-        ctx.fillStyle = colors.muted;
-      }
+    // Geri kalanlar soluklaşıyor
+    ctx.fillStyle = '#ffb000';
+    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize * 2);
 
-      ctx.fillText(ch, x, y);
-    });
+    ctx.fillStyle = '#a07000';
+    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize * 3);
 
-    col.pos += col.speed;
-
-    if (col.pos - totalH > canvas.height) {
-      col.text  = lines[Math.floor(Math.random() * lines.length)];
-      col.pos   = -fontSize * 5;
-      col.speed = 1.2 + Math.random() * 1.5;
+    if (y > canvas.height && Math.random() > 0.975) {
+      drops[i] = 0;
     }
-  });
+    drops[i] += 0.6;
+  }
 }
 
 setInterval(draw, 40);
@@ -151,6 +68,6 @@ setInterval(draw, 40);
   height: 100%;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.75;
+  opacity: 0.5;
 }
 </style>
