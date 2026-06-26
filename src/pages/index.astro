@@ -27,7 +27,6 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
           <a class="col-name" href={`/posts/${post.id}`}>
             {post.id}
           </a>
-          <span class="col-desc">&quot;{post.data.title}&quot;</span>
         </div>
       );
     })}
