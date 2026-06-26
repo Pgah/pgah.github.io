@@ -77,8 +77,8 @@ function resize() {
   const colCount = Math.floor(canvas.width / (fontSize * 10));
   columns = Array.from({ length: colCount }, (_, i) => ({
     text:    lines[Math.floor(Math.random() * lines.length)],
-    pos:     Math.random() * -canvas.height,
-    speed:   0.4 + Math.random() * 0.8,
+    pos:     Math.random() * canvas.height * 0.5,
+    speed:   1.5 + Math.random() * 2.0,
     charIdx: 0,
   }));
 }
@@ -135,7 +135,7 @@ function draw() {
     if (col.pos - totalH > canvas.height) {
       col.text  = lines[Math.floor(Math.random() * lines.length)];
       col.pos   = -fontSize * 5;
-      col.speed = 0.4 + Math.random() * 0.8;
+      col.speed = 1.5 + Math.random() * 2.0;
     }
   });
 }
