@@ -35,6 +35,9 @@ body {
 main {
   max-width: var(--width);
   margin: 0 auto;
+  background: rgba(14, 9, 0, 0.75);
+  padding: 1.5rem;
+  backdrop-filter: blur(1px);
 }
 
 a {

@@ -1,0 +1,69 @@
+---
+---
+
+<canvas id="matrix-canvas"></canvas>
+
+<script>
+const canvas = document.getElementById('matrix-canvas') as HTMLCanvasElement;
+const ctx = canvas.getContext('2d')!;
+
+const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノ{}[]()<>/\\|=+-*&^%$#@!?;:'.split('');
+
+let cols: number[];
+let drops: number[];
+let fontSize = 13;
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colCount = Math.floor(canvas.width / fontSize);
+  cols  = Array(colCount).fill(0);
+  drops = Array(colCount).fill(0).map(() => Math.random() * -50);
+}
+
+resize();
+window.addEventListener('resize', resize);
+
+function draw() {
+  ctx.fillStyle = 'rgba(14, 9, 0, 0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = 0; i < drops.length; i++) {
+    const char = chars[Math.floor(Math.random() * chars.length)];
+    const y = drops[i] * fontSize;
+
+    // Baş karakter daha parlak
+    if (drops[i] > 0) {
+      ctx.fillStyle = '#fff8e0';
+      ctx.fillText(char, i * fontSize, y);
+    }
+
+    // Gövde
+    const alpha = Math.max(0.1, 1 - (drops[i] % 20) / 20);
+    ctx.fillStyle = `rgba(255, 176, 0, ${alpha * 0.6})`;
+    const bodyChar = chars[Math.floor(Math.random() * chars.length)];
+    ctx.fillText(bodyChar, i * fontSize, y - fontSize);
+
+    if (y > canvas.height && Math.random() > 0.975) {
+      drops[i] = 0;
+    }
+    drops[i] += 0.5;
+  }
+}
+
+ctx.font = `${fontSize}px 'Courier New', monospace`;
+setInterval(draw, 50);
+</script>
+
+<style>
+#matrix-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+}
+</style>
