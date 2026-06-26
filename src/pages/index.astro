@@ -58,6 +58,10 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
   padding-bottom: 0.25rem;
   border-bottom: 1px solid var(--fg-muted);
 }
+.listing-header .col-date,
+.listing-header .col-name {
+  padding-left: 3ch;
+}
 .listing-row {
   display: grid;
   grid-template-columns: 16ch 16ch 24ch 1fr;
