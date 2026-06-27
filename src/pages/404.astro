@@ -3,6 +3,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Prompt from '../components/Prompt.astro';
 ---
 
+<script>
+  if (window.location.pathname === '/rss.xml') {
+    window.location.replace('https://www.youtube.com/watch?v=ztABYog5x3o');
+  }
+</script>
+
 <BaseLayout title="404" description="Page not found">
   <Prompt path="???" command="cd /this/path" />
 
