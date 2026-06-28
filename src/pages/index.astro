@@ -5,6 +5,15 @@ import { getCollection } from 'astro:content';
 
 const posts = (await getCollection('posts', ({ data }) => !data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const postsJson = JSON.stringify(posts.map(p => {
+  const d = p.data.date;
+  return {
+    id: p.id,
+    date: p.data.date.valueOf(),
+    dateStr: `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${d.getUTCFullYear()}`,
+  };
+}));
 ---
 
 <BaseLayout title="posts">
@@ -13,23 +22,23 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
   <div class="listing">
     <div class="listing-header">
       <span class="col-perm">permissions</span>
-      <span class="col-date">date</span>
-      <span class="col-name">name</span>
+      <span class="col-date sort-btn" id="sort-date">date <span class="sort-arrow">↓</span></span>
+      <span class="col-name sort-btn" id="sort-name">name <span class="sort-arrow"></span></span>
     </div>
 
-    {posts.map((post) => {
-      const d = post.data.date;
-      const dateStr = `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${d.getUTCFullYear()}`;
-      return (
-        <div class="listing-row">
-          <span class="col-perm perm">-rw-r--r--</span>
-          <span class="col-date date">{dateStr}</span>
-          <a class="col-name" href={`/posts/${post.id}`}>
-            {post.id}
-          </a>
-        </div>
-      );
-    })}
+    <div id="listing-body">
+      {posts.map((post) => {
+        const d = post.data.date;
+        const dateStr = `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${d.getUTCFullYear()}`;
+        return (
+          <div class="listing-row">
+            <span class="col-perm perm">-rw-r--r--</span>
+            <span class="col-date date">{dateStr}</span>
+            <a class="col-name" href={`/posts/${post.id}`}>{post.id}</a>
+          </div>
+        );
+      })}
+    </div>
 
     {posts.length === 0 && (
       <div class="listing-row empty-row">
@@ -44,6 +53,51 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
     <span class="prompt-dim">sleeper@matrix:~/posts$</span> <span class="cursor">&#x2588;</span>
   </div>
 </BaseLayout>
+
+<script define:vars={{ postsJson }}>
+  const posts = JSON.parse(postsJson);
+  let sortKey = 'date';
+  let sortDir = -1; // -1 desc, 1 asc
+
+  const body = document.getElementById('listing-body');
+  const btnDate = document.getElementById('sort-date');
+  const btnName = document.getElementById('sort-name');
+
+  function thirdWord(id) {
+    const parts = id.split('-');
+    return parts.slice(2).join('-');
+  }
+
+  function render() {
+    const sorted = [...posts].sort((a, b) => {
+      if (sortKey === 'date') return (a.date - b.date) * sortDir;
+      return thirdWord(a.id).localeCompare(thirdWord(b.id)) * sortDir;
+    });
+
+    body.innerHTML = sorted.map(p => `
+      <div class="listing-row">
+        <span class="col-perm perm">-rw-r--r--</span>
+        <span class="col-date date">${p.dateStr}</span>
+        <a class="col-name" href="/posts/${p.id}">${p.id}</a>
+      </div>
+    `).join('');
+
+    btnDate.querySelector('.sort-arrow').textContent = sortKey === 'date' ? (sortDir === -1 ? '↓' : '↑') : '';
+    btnName.querySelector('.sort-arrow').textContent = sortKey === 'name' ? (sortDir === -1 ? '↓' : '↑') : '';
+  }
+
+  btnDate.addEventListener('click', () => {
+    if (sortKey === 'date') sortDir *= -1;
+    else { sortKey = 'date'; sortDir = -1; }
+    render();
+  });
+
+  btnName.addEventListener('click', () => {
+    if (sortKey === 'name') sortDir *= -1;
+    else { sortKey = 'name'; sortDir = 1; }
+    render();
+  });
+</script>
 
 <style>
 .listing {
@@ -65,6 +119,13 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
 }
 .listing-header .col-name {
   padding-left: 15ch;
+}
+.sort-btn {
+  cursor: pointer;
+  user-select: none;
+}
+.sort-btn:hover {
+  color: var(--fg-bright);
 }
 .listing-row {
   display: grid;
