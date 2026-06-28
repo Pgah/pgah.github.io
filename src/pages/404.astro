@@ -1,6 +1,5 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Prompt from '../components/Prompt.astro';
+import MatrixRain from '../components/MatrixRain.astro';
 ---
 
 <script>
@@ -9,50 +8,72 @@ import Prompt from '../components/Prompt.astro';
   }
 </script>
 
-<BaseLayout title="404" description="Page not found">
-  <Prompt path="???" command="cd /this/path" />
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404</title>
+</head>
+<body>
+  <MatrixRain />
 
-  <div class="error-block">
-    <p class="error-code">bash: cd: /this/path: No such file or directory</p>
-    <p class="error-hint">Exit code: <span class="highlight">404</span></p>
+  <div class="center">
+    <p class="wake">WAKE UP, NEO.</p>
+    <p class="sub">This page does not exist.</p>
+    <a href="/" class="back">// return to reality</a>
   </div>
-
-  <div class="suggestion">
-    <p class="dim">Try one of these instead:</p>
-    <div class="links">
-      <a href="/">~/blogs</a>
-      <a href="/about">~/about</a>
-    </div>
-  </div>
-</BaseLayout>
+</body>
+</html>
 
 <style>
-.error-block {
-  margin-bottom: 2rem;
-}
-.error-code {
-  color: var(--red);
-  margin-bottom: 0.5rem;
-}
-.error-hint {
-  color: var(--fg-dim);
-}
-.highlight {
-  color: var(--fg-bright);
-}
-.suggestion {
-  margin-top: 1.5rem;
-}
-.dim {
-  color: var(--fg-muted);
-  margin-bottom: 0.5rem;
-}
-.links {
-  display: flex;
-  gap: 2ch;
-  padding-left: 2ch;
-}
-.links a {
-  color: var(--fg-bright);
-}
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: #000;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+  }
+
+  .center {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+  }
+
+  .wake {
+    font-size: 3rem;
+    color: #fff8e0;
+    letter-spacing: 0.2em;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 20px #f5e840, 0 0 40px #e8d000;
+  }
+
+  .sub {
+    font-size: 1rem;
+    color: #a09000;
+    letter-spacing: 0.1em;
+    margin-bottom: 2rem;
+  }
+
+  .back {
+    font-size: 0.9rem;
+    color: #f5e840;
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    border: 1px solid #a09000;
+    padding: 0.5rem 1.5rem;
+    transition: all 0.2s;
+  }
+
+  .back:hover {
+    background: #f5e840;
+    color: #000;
+  }
 </style>
