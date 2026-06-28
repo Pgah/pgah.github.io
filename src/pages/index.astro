@@ -57,30 +57,29 @@ const postsJson = JSON.stringify(posts.map(p => {
 <script define:vars={{ postsJson }}>
   const posts = JSON.parse(postsJson);
   let sortKey = 'date';
-  let sortDir = -1; // -1 desc, 1 asc
+  let sortDir = -1;
 
   const body = document.getElementById('listing-body');
   const btnDate = document.getElementById('sort-date');
   const btnName = document.getElementById('sort-name');
 
+  const rows = Array.from(body.querySelectorAll('.listing-row'));
+  rows.forEach((row, i) => {
+    row.dataset.date = posts[i].date;
+    row.dataset.id = posts[i].id;
+  });
+
   function thirdWord(id) {
-    const parts = id.split('-');
-    return parts.slice(2).join('-');
+    return id.split('-').slice(2).join('-');
   }
 
   function render() {
-    const sorted = [...posts].sort((a, b) => {
-      if (sortKey === 'date') return (a.date - b.date) * sortDir;
-      return thirdWord(a.id).localeCompare(thirdWord(b.id)) * sortDir;
+    const sorted = [...rows].sort((a, b) => {
+      if (sortKey === 'date') return (Number(a.dataset.date) - Number(b.dataset.date)) * sortDir;
+      return thirdWord(a.dataset.id).localeCompare(thirdWord(b.dataset.id)) * sortDir;
     });
 
-    body.innerHTML = sorted.map(p => `
-      <div class="listing-row">
-        <span class="col-perm perm">-rw-r--r--</span>
-        <span class="col-date date">${p.dateStr}</span>
-        <a class="col-name" href="/posts/${p.id}">${p.id}</a>
-      </div>
-    `).join('');
+    sorted.forEach(row => body.appendChild(row));
 
     btnDate.querySelector('.sort-arrow').textContent = sortKey === 'date' ? (sortDir === -1 ? '↓' : '↑') : '';
     btnName.querySelector('.sort-arrow').textContent = sortKey === 'name' ? (sortDir === -1 ? '↓' : '↑') : '';
