@@ -1,5 +1,5 @@
 ---
-title: "Introduction to Linux"
+title: "The Architecture to of Linux"
 date: 2026-06-30
 description: "Not the commands. The actual system — what it is, how it thinks, and why it works the way it does."
 tags: ["linux", "beginner", "fundamentals"]
