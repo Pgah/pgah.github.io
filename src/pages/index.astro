@@ -113,6 +113,22 @@ const postsJson = JSON.stringify(posts.map(p => {
   }
 
   termInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const val = termInput.value;
+      const match = val.match(/^(cd\s+)(.*)$/);
+      if (!match) return;
+      const prefix = match[1];
+      const partial = match[2];
+      const matches = posts.filter(p => p.id.startsWith(partial));
+      if (matches.length === 1) {
+        termInput.value = prefix + matches[0].id;
+      } else if (matches.length > 1) {
+        addOutputLine(`<span class="prompt-dim">sleeper@matrix:~/posts$</span>&nbsp;<span class="term-cmd">${val}</span>`);
+        matches.forEach(p => addOutputLine(`<span class="term-cmd">${p.id}</span>`));
+      }
+      return;
+    }
     if (e.key !== 'Enter') return;
     const cmd = termInput.value.trim();
     termInput.value = '';
