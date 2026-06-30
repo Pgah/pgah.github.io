@@ -34,7 +34,7 @@ const postsJson = JSON.stringify(posts.map(p => {
           <div class="listing-row">
             <span class="col-perm perm">-rw-r--r--</span>
             <span class="col-date date">{dateStr}</span>
-            <a class="col-name" href={`/posts/${post.id}`}>{post.id}</a>
+            <a class="col-name" href={`/posts/${post.id}`}>{post.data.title}</a>
           </div>
         );
       })}
