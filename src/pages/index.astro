@@ -52,7 +52,7 @@ const postsJson = JSON.stringify(posts.map(p => {
   <div id="terminal-output"></div>
 
   <div class="cursor-line" id="cursor-line">
-    <span class="prompt-dim">sleeper@matrix:~/posts$</span>&nbsp;<input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" />
+    <span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" />
   </div>
 </BaseLayout>
 
@@ -151,7 +151,7 @@ const postsJson = JSON.stringify(posts.map(p => {
     const cmd = termInput.value.trim();
     termInput.value = '';
 
-    addOutputLine(`<span class="prompt-dim">sleeper@matrix:~/posts$</span>&nbsp;<span class="term-cmd">${cmd}</span>`);
+    addOutputLine(`<span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<span class="term-cmd">${cmd}</span>`);
 
     if (!cmd) return;
 
