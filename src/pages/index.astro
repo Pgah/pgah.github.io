@@ -165,6 +165,8 @@ const postsJson = JSON.stringify(posts.map(p => {
       } else {
         addOutputLine(`<span class="term-err">bash: cd: ${target}: No such file or directory</span>`);
       }
+    } else if (cmd === 'ls -la' || cmd === 'ls -la ~/blogs') {
+      posts.forEach(p => addOutputLine(`<span class="perm">-rw-r--r--</span>&nbsp;&nbsp;<span class="date">${p.dateStr}</span>&nbsp;&nbsp;<span class="term-cmd">${p.id}</span>`));
     } else if (parts[0] === 'ls') {
       posts.forEach(p => addOutputLine(`<span class="term-cmd">${p.id}</span>`));
     } else if (cmd === 'clear') {
