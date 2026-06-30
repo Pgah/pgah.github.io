@@ -105,6 +105,10 @@ const postsJson = JSON.stringify(posts.map(p => {
 
   cursorLine.addEventListener('click', () => termInput.focus());
 
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
   function addOutputLine(html) {
     const div = document.createElement('div');
     div.className = 'term-out-line';
@@ -151,7 +155,7 @@ const postsJson = JSON.stringify(posts.map(p => {
     const cmd = termInput.value.trim();
     termInput.value = '';
 
-    addOutputLine(`<span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<span class="term-cmd">${cmd}</span>`);
+    addOutputLine(`<span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<span class="term-cmd">${escapeHtml(cmd)}</span>`);
 
     if (!cmd) return;
 
@@ -163,7 +167,7 @@ const postsJson = JSON.stringify(posts.map(p => {
       if (post) {
         window.location.href = `/posts/${post.id}`;
       } else {
-        addOutputLine(`<span class="term-err">bash: cd: ${target}: No such file or directory</span>`);
+        addOutputLine(`<span class="term-err">bash: cd: ${escapeHtml(target)}: No such file or directory</span>`);
       }
     } else if (cmd === 'ls -la' || cmd === 'ls -la ~/blogs') {
       posts.forEach(p => addOutputLine(`<span class="perm">-rw-r--r--</span>&nbsp;&nbsp;<span class="date">${p.dateStr}</span>&nbsp;&nbsp;<span class="term-cmd">${p.id}</span>`));
@@ -172,7 +176,7 @@ const postsJson = JSON.stringify(posts.map(p => {
     } else if (cmd === 'clear') {
       termOutput.innerHTML = '';
     } else {
-      addOutputLine(`<span class="term-err">bash: ${parts[0]}: command not found</span>`);
+      addOutputLine(`<span class="term-err">bash: ${escapeHtml(parts[0])}: command not found</span>`);
     }
   });
 </script>
