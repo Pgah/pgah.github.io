@@ -49,6 +49,8 @@ const postsJson = JSON.stringify(posts.map(p => {
     )}
   </div>
 
+  <script type="application/json" id="posts-data" set:html={postsJson}></script>
+
   <div id="terminal-output"></div>
 
   <div class="cursor-line" id="cursor-line">
@@ -56,8 +58,8 @@ const postsJson = JSON.stringify(posts.map(p => {
   </div>
 </BaseLayout>
 
-<script define:vars={{ postsJson }}>
-  const posts = JSON.parse(postsJson);
+<script>
+  const posts = JSON.parse(document.getElementById('posts-data').textContent);
   let sortKey = 'date';
   let sortDir = -1;
 
