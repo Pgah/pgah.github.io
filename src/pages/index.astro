@@ -111,11 +111,19 @@ const postsJson = JSON.stringify(posts.map(p => {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
+  let currentGroup = null;
+
   function addOutputLine(html) {
     const div = document.createElement('div');
     div.className = 'term-out-line';
     div.innerHTML = html;
-    termOutput.appendChild(div);
+    currentGroup.appendChild(div);
+  }
+
+  function newGroup() {
+    currentGroup = document.createElement('div');
+    currentGroup.className = 'term-group';
+    termOutput.appendChild(currentGroup);
   }
 
   let tabCycle = null;
@@ -157,6 +165,7 @@ const postsJson = JSON.stringify(posts.map(p => {
     const cmd = termInput.value.trim();
     termInput.value = '';
 
+    newGroup();
     addOutputLine(`<span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<span class="term-cmd">${escapeHtml(cmd)}</span>`);
 
     if (!cmd) return;
@@ -241,9 +250,11 @@ const postsJson = JSON.stringify(posts.map(p => {
   caret-color: var(--fg-bright);
   width: 50ch;
 }
+.term-group {
+  margin-top: 1.5rem;
+}
 .term-out-line {
   margin-top: 0.25rem;
-  margin-bottom: 1rem;
   font-size: inherit;
 }
 .term-cmd { color: var(--fg-bright); }
