@@ -16,7 +16,7 @@ import Prompt from '../components/Prompt.astro';
       <h2>CHOICE</h2>
       <p class="indent">
         <a href="https://tryhackme.com" target="_blank">[--red-pill]</a>
-        <span style="display:inline-block; width:4ch"></span>
+        <span class="pill-gap"></span>
         <a href="https://www.google.com" target="_blank">[--blue-pill]</a>
       </p>
     </section>
@@ -70,5 +70,9 @@ import Prompt from '../components/Prompt.astro';
 }
 .flag {
   color: var(--fg-dim);
+}
+.pill-gap {
+  display: inline-block;
+  width: 4ch;
 }
 </style>
