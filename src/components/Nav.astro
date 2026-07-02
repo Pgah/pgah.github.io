@@ -86,4 +86,25 @@ nav {
   background: var(--bg-soft);
   border-bottom: 2px solid var(--fg);
 }
+
+@media (max-width: 600px) {
+  .palette-tabs {
+    flex-direction: column;
+  }
+
+  .palette-tab {
+    border-right: none;
+    border-bottom: 1px solid var(--fg-muted);
+    text-align: left;
+    padding-left: 1rem;
+  }
+
+  .palette-tab:last-child {
+    border-bottom: none;
+  }
+
+  .palette-tab.active {
+    border-bottom: 1px solid var(--fg);
+  }
+}
 </style>

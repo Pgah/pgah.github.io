@@ -75,4 +75,18 @@ import Prompt from '../components/Prompt.astro';
   display: inline-block;
   width: 4ch;
 }
+
+@media (max-width: 600px) {
+  .indent {
+    padding-left: 2ch;
+  }
+
+  .options {
+    padding-left: 2ch;
+  }
+
+  .option-row {
+    grid-template-columns: 12ch 1fr;
+  }
+}
 </style>

@@ -111,6 +111,16 @@ hr {
 ::-webkit-scrollbar { width: 6px; background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--fg-muted); }
 
+@media (max-width: 600px) {
+  body {
+    padding: 1rem 0.75rem 3rem;
+  }
+
+  main {
+    padding: 1rem;
+  }
+}
+
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
