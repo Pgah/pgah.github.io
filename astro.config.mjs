@@ -3,7 +3,7 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 
 export default defineConfig({
-  site: 'https://pgah.github.io',
+  site: 'https://emreaslan.vercel.app',
   integrations: [mdx()],
   markdown: {
     shikiConfig: {
