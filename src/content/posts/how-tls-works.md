@@ -120,3 +120,9 @@ Knowing how TLS works means being able to evaluate whether a server is doing it 
 **OCSP Stapling** — Certificate revocation tells browsers a cert is no longer valid before it expires. Without stapling, the browser contacts the CA directly — leaking browsing behavior and adding latency. With stapling, the server includes a signed, time-limited OCSP response in the handshake. Faster and more private.
 
 To check a server: `openssl s_client -connect domain:443` shows what gets negotiated. Replace `domain` with the actual hostname.
+
+The padlock tells you one thing: TLS is running. It doesn't tell you which version, which cipher suites, whether the CA that signed the certificate is trustworthy, or whether someone has installed a root on your device.
+
+Understanding TLS tells you all of that — and more importantly, what it doesn't guarantee. A valid certificate means a server controls a private key. It means a CA vouched for the domain. It means your connection is encrypted and authenticated against a specific trust chain.
+
+That's meaningful. It's not the same as safe.
