@@ -19,15 +19,15 @@ Pick one thing and go deep. Set up a home lab. Break a vulnerable machine on Hac
 
 Before you touch a single hacking tool, you need to understand how things actually work:
 
-- **Networking** — TCP/IP, DNS, HTTP, how packets move. You can't attack what you don't understand.
-- **Linux** — Most of this field lives in the terminal. Get comfortable there.
-- **How the web works** — Requests, responses, cookies, sessions. Read the HTTP spec at least once.
+- **Networking** TCP/IP, DNS, HTTP, how packets move. You can't attack what you don't understand.
+- **Linux** Most of this field lives in the terminal. Get comfortable there.
+- **How the web works** Requests, responses, cookies, sessions. Read the HTTP spec at least once.
 
 Tools are just tools. The person behind the terminal matters more.
 
 ## The Mindset Shift
 
-Cybersecurity isn't about memorizing exploits. It's about thinking like someone who wants to break a system — and then thinking like someone who wants to defend it.
+Cybersecurity isn't about memorizing exploits. It's about thinking like someone who wants to break a system and then thinking like someone who wants to defend it.
 
 Ask yourself constantly: *How could this go wrong? What assumptions is this system making? What happens if I give it unexpected input?*
 

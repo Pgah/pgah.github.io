@@ -11,9 +11,9 @@ Let's fix that. Before a single command, understand the machine.
 
 ## What Linux Actually Is
 
-Linux is a kernel. Not an operating system in the complete sense  a kernel. The kernel is the core layer that sits between your hardware and everything else. It controls memory, manages processes, handles hardware communication, and enforces security boundaries.
+Linux is a kernel. Not an operating system in the complete sense, a kernel. The kernel is the core layer that sits between your hardware and everything else. It controls memory, manages processes, handles hardware communication, and enforces security boundaries.
 
-What most people call "Linux" is actually the kernel bundled with a collection of tools, libraries, and a shell. Ubuntu, Debian, Kali, Arch  these are all distributions. Same kernel underneath, different choices on top.
+What most people call "Linux" is actually the kernel bundled with a collection of tools, libraries, and a shell. Ubuntu, Debian, Kali, Arch: these are all distributions. Same kernel underneath, different choices on top.
 
 The kernel itself never talks to you directly. You never interact with it. Everything you do goes through layers that eventually reach it.
 
@@ -25,9 +25,9 @@ The system is divided into two separate worlds:
 
 **Kernel space** is where the kernel lives. Code here has unrestricted access to hardware, memory, everything. A bug in kernel space can crash the entire system. A vulnerability here is catastrophic.
 
-**User space** is where everything else runs. Your browser, your terminal, your applications. Code here is sandboxed  it can't directly touch hardware. If it needs hardware access, it has to ask the kernel through a controlled interface.
+**User space** is where everything else runs. Your browser, your terminal, your applications. Code here is sandboxed, it can't directly touch hardware. If it needs hardware access, it has to ask the kernel through a controlled interface.
 
-Why does this matter for security? Because the boundary between these two worlds is the most important security boundary in the entire system. Breaking out of user space into kernel space  a privilege escalation is one of the most serious things an attacker can do.
+Why does this matter for security? Because the boundary between these two worlds is the most important security boundary in the entire system. Breaking out of user space into kernel space, a privilege escalation, is one of the most serious things an attacker can do.
 
 ## Everything Is a File
 
@@ -58,7 +58,7 @@ When you're investigating a Linux system — your own or one you're testing know
 
 Every running program is a process. The kernel tracks every process, gives it resources, and decides when it runs.
 
-When Linux boots, the kernel starts a single process historically called `init`, today often `systemd`. Everything else on the system is a descendant of that first process. Processes create new processes by forking splitting into a parent and a child.
+When Linux boots, the kernel starts a single process historically called `init`, today often `systemd`. Everything else on the system is a descendant of that first process. Processes create new processes by forking, splitting into a parent and a child.
 
 This parent-child relationship matters. It's how permissions propagate, how signals travel, and how a process inherits its environment.
 
@@ -78,7 +78,7 @@ These permissions are the first line of access control on any Linux system. A mi
 
 ## The Shell
 
-The shell is not Linux. The shell is a program an interface that takes text input, interprets it, and runs other programs. It's replaceable. It's just software.
+The shell is not Linux. The shell is a program, an interface that takes text input, interprets it, and runs other programs. It's replaceable. It's just software.
 
 What matters is understanding that when you run something in a terminal, you're talking to the shell, and the shell is talking to everything else. The shell has a user, a working directory, and an environment. It inherits permissions. It can be scripted.
 

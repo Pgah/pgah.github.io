@@ -15,23 +15,23 @@ When you type a URL into a browser, somewhere between 5 and 20 things happen bef
 
 If you don't understand this, you can't understand why attacks work. You can't read traffic. You can't defend a system you don't understand.
 
-## The OSI Model — Actually Useful
+## The OSI Model Actually Useful
 
 Everyone hates the OSI model until it saves them in a troubleshooting session. Here's what actually matters:
 
-- **Layer 1 — Physical**: Cables, signals, Wi-Fi. Bits on a wire.
-- **Layer 2 — Data Link**: MAC addresses, switches, frames. Your local network.
-- **Layer 3 — Network**: IP addresses, routing, packets. How data crosses networks.
-- **Layer 4 — Transport**: TCP and UDP. Reliability vs speed.
-- **Layer 7 — Application**: HTTP, DNS, FTP. What your apps speak.
+- **Layer 1 Physical**: Cables, signals, Wi-Fi. Bits on a wire.
+- **Layer 2 Data Link**: MAC addresses, switches, frames. Your local network.
+- **Layer 3 Network**: IP addresses, routing, packets. How data crosses networks.
+- **Layer 4 Transport**: TCP and UDP. Reliability vs speed.
+- **Layer 7 Application**: HTTP, DNS, FTP. What your apps speak.
 
-You don't need to memorize all 7 layers. You need to understand what layer you're operating at — and why it matters.
+You don't need to memorize all 7 layers. You need to understand what layer you're operating at and why it matters.
 
 ## TCP vs UDP
 
-**TCP** is reliable. It does a three-way handshake (SYN, SYN-ACK, ACK), guarantees delivery, and retransmits lost packets. Use it when you can't afford to lose data — web browsing, file transfers, SSH.
+**TCP** is reliable. It does a three-way handshake (SYN, SYN-ACK, ACK), guarantees delivery, and retransmits lost packets. Use it when you can't afford to lose data web browsing, file transfers, SSH.
 
-**UDP** is fast. No handshake, no guarantees, no retransmission. Use it when speed matters more than perfection — video streaming, DNS queries, VoIP.
+**UDP** is fast. No handshake, no guarantees, no retransmission. Use it when speed matters more than perfection video streaming, DNS queries, VoIP.
 
 From a security perspective: TCP's handshake is the basis of the SYN flood attack. UDP's lack of connection state makes it useful for amplification attacks. Understanding the protocol means understanding the attack.
 
@@ -44,7 +44,7 @@ Every device on a network has an IP address. There are two types:
 
 Subnetting lets you divide a network into smaller pieces. A `/24` subnet gives you 254 usable hosts. A `/30` gives you 2. You don't need to be a subnetting wizard, but you need to understand what a subnet mask is and why `192.168.1.0/24` means all addresses from `192.168.1.1` to `192.168.1.254`.
 
-## DNS — The Internet's Phone Book
+## DNS The Internet's Phone Book
 
 When you visit `google.com`, your computer doesn't know where that is. It asks a DNS server to resolve the domain name into an IP address.
 
@@ -77,7 +77,7 @@ An open port is an open door. A misconfigured service behind that port is an ope
 
 Reading about networking only gets you so far. Open Wireshark and watch your own traffic. Run `nmap` against a home lab machine. Set up a small network with two virtual machines and watch packets move between them.
 
-The goal isn't to memorize. The goal is to build intuition — to look at a packet capture and immediately understand what's happening.
+The goal isn't to memorize. The goal is to build intuition to look at a packet capture and immediately understand what's happening.
 
 That intuition is what separates someone who knows tools from someone who knows what's actually going on.
 
