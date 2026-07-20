@@ -92,3 +92,31 @@ The handshake section above treats TLS 1.2 as the baseline. TLS 1.3 changes it s
 **Weak algorithms removed** — RC4, 3DES, SHA-1 for signatures, and export-grade cipher suites are gone. TLS 1.3 has five cipher suites; all are strong. TLS 1.2 had hundreds of options, many of which existed only to be exploited.
 
 **Downgrade protection built in** — When a TLS 1.3 server downgrades to TLS 1.2 for compatibility, it embeds a sentinel value in the ServerHello's random field. A TLS 1.3 client that sees this knows a downgrade occurred and can abort the connection if unexpected.
+
+## What Can Go Wrong
+
+Understanding TLS means understanding where it fails.
+
+**Downgrade attacks** — An attacker in the middle manipulates the handshake to force both sides to negotiate an older, weaker version or cipher suite. POODLE (2014) exploited this against SSL 3.0. BEAST (2011) against TLS 1.0. The fix: disable old versions server-side. TLS 1.0 and 1.1 are deprecated. If your server still accepts them, it's a problem.
+
+**Rogue certificates** — A CA issues a valid certificate for a domain it shouldn't. This is how DigiNotar's breach played out. The certificate is cryptographically valid; the browser has no built-in mechanism to detect mis-issuance without CT logs. Browsers now enforce CT log inclusion for publicly-trusted certificates.
+
+**Expired certificates** — The connection fails with an error, and users click through the warning. Now you have an authenticated, encrypted connection to a server the user explicitly decided to distrust. Expiry is an operational failure with security consequences.
+
+**MITM with an installed root** — Corporate proxies, parental controls, and malware use the same technique: install a custom root CA in the device's root store, then intercept TLS connections by presenting their own certificates. The padlock shows green. The proxy reads everything. This is legitimate for enterprise security monitoring. It's also how certain malware families operate. The padlock tells you TLS is active — it doesn't tell you whose root you're trusting.
+
+## What Good TLS Looks Like
+
+Knowing how TLS works means being able to evaluate whether a server is doing it right.
+
+**Version** — TLS 1.2 minimum. TLS 1.3 preferred. Disable TLS 1.0 and 1.1. Anything older is indefensible.
+
+**Cipher suites** — For TLS 1.2: ECDHE for key exchange, AES-128-GCM, AES-256-GCM, or ChaCha20-Poly1305 for encryption. No RC4, no 3DES, no CBC mode paired with SHA-1. For TLS 1.3: all five supported suites are acceptable; the protocol enforces this for you.
+
+**Certificate** — Valid chain to a trusted root, not expired, domain matches. Include the intermediate CA in the server response — some servers omit it and rely on clients to fetch it, which fails in restricted environments.
+
+**HSTS** — HTTP Strict Transport Security. The server instructs the browser: for the next N seconds, only connect to this domain over HTTPS and reject any connection that fails TLS validation. This closes the window where an attacker intercepts the initial HTTP request before it redirects to HTTPS.
+
+**OCSP Stapling** — Certificate revocation tells browsers a cert is no longer valid before it expires. Without stapling, the browser contacts the CA directly — leaking browsing behavior and adding latency. With stapling, the server includes a signed, time-limited OCSP response in the handshake. Faster and more private.
+
+To check a server: `openssl s_client -connect domain:443` shows what gets negotiated. Replace `domain` with the actual hostname.
