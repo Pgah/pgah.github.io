@@ -34,3 +34,25 @@ TLS has to solve three distinct problems:
 **Authentication** — you're actually talking to the server you think you are, not an impostor.
 
 Solving one or two of these isn't enough. A connection can be encrypted but unauthenticated — you're sending secrets to someone, you just don't know who. TLS solves all three.
+
+## The Handshake
+
+When your browser connects to an HTTPS site, before any HTTP request is sent, a handshake happens. This is the cryptographic core — where TLS establishes the secure channel.
+
+Here's how TLS 1.2 works:
+
+**ClientHello** — The browser sends a list of supported TLS versions, cipher suites it understands (combinations of algorithms for key exchange, encryption, and hashing), and a random value.
+
+In TLS 1.3, the ClientHello also includes key share data. The client makes an educated guess about which key exchange the server will pick and sends its public key material upfront — eliminating a round trip.
+
+**ServerHello** — The server picks a TLS version and cipher suite from the client's list and sends its own random value. In TLS 1.3, the server's key share data is included here, and the connection is already half-encrypted at this point.
+
+**Certificate** — The server sends its certificate: proof of identity. The client uses this to verify it's talking to the right server. More on certificates in the next section.
+
+**Key Exchange** — In TLS 1.2 with RSA key exchange, the client generates a pre-master secret, encrypts it with the server's public key, and sends it. Only the server can decrypt it. Both sides derive the session key from this secret and the random values exchanged earlier.
+
+In TLS 1.2 with DHE or ECDHE, key exchange uses Diffie-Hellman: both sides contribute values and arrive at a shared secret without either side sending it. TLS 1.3 removes RSA key exchange entirely — only ephemeral Diffie-Hellman variants remain.
+
+**Finished** — Both sides send a Finished message: a hash of the entire handshake, encrypted with the derived session key. If either side receives a Finished message it can't verify, the connection aborts. This prevents tampering with the handshake itself.
+
+TLS 1.2 requires two round trips before application data flows. TLS 1.3 requires one.
