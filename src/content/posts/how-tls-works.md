@@ -78,3 +78,17 @@ For a certificate to be trusted, the browser checks: the signature chain leads t
 Where trust breaks: a compromised or malicious CA. In 2011, DigiNotar — a Dutch CA — was breached. Attackers issued valid certificates for domains including google.com. Any browser trusting DigiNotar's root would accept these as legitimate. DigiNotar was removed from all root stores. The damage was done.
 
 Certificate Transparency (CT) is the response. Since 2018, browsers require that publicly-trusted certificates appear in public CT logs. This doesn't prevent mis-issuance, but it makes it detectable after the fact.
+
+## TLS 1.3: What Changed
+
+The handshake section above treats TLS 1.2 as the baseline. TLS 1.3 changes it structurally. Step-by-step differences were noted inline; here's the consolidated picture.
+
+**1-RTT by default** — The client sends key share data in the ClientHello. The server responds with its key share in the ServerHello. Both sides derive the session key immediately. Application data follows in the next message. One round trip instead of two.
+
+**0-RTT (early data)** — On a resumed connection, TLS 1.3 allows the client to send application data in the very first message, before the handshake completes. Faster, but 0-RTT data is vulnerable to replay attacks. An attacker who captures that first message can resend it. Use only for idempotent requests.
+
+**Forward secrecy is mandatory** — TLS 1.3 removes RSA key exchange. Only ephemeral Diffie-Hellman variants are allowed. Session keys are derived from values discarded after the session ends. Someone who records your encrypted traffic today and obtains the server's private key years later still can't decrypt it. In TLS 1.2 with RSA key exchange, they could.
+
+**Weak algorithms removed** — RC4, 3DES, SHA-1 for signatures, and export-grade cipher suites are gone. TLS 1.3 has five cipher suites; all are strong. TLS 1.2 had hundreds of options, many of which existed only to be exploited.
+
+**Downgrade protection built in** — When a TLS 1.3 server downgrades to TLS 1.2 for compatibility, it embeds a sentinel value in the ServerHello's random field. A TLS 1.3 client that sees this knows a downgrade occurred and can abort the connection if unexpected.
