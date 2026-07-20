@@ -56,3 +56,25 @@ In TLS 1.2 with DHE or ECDHE, key exchange uses Diffie-Hellman: both sides contr
 **Finished** — Both sides send a Finished message: a hash of the entire handshake, encrypted with the derived session key. If either side receives a Finished message it can't verify, the connection aborts. This prevents tampering with the handshake itself.
 
 TLS 1.2 requires two round trips before application data flows. TLS 1.3 requires one.
+
+## The Certificate
+
+The server's certificate is a file containing several things: the server's public key, the domain name(s) it's valid for, an expiration date, the name of the certificate authority (CA) that issued it, and the CA's cryptographic signature over all of it.
+
+What the certificate proves: the server controls the private key matching the public key in the certificate. During the handshake, the server uses its private key to sign data the client can verify. If the signature checks out, the server has the key.
+
+What the certificate doesn't prove on its own: that you should trust it. Anyone can generate a certificate and sign it themselves. The trustworthiness comes from who signed it — and whether you trust them.
+
+## The Trust Chain
+
+Certificate authorities are third parties whose job is to verify that an entity controls a domain before issuing a certificate. The CA signs the certificate with its own private key. Your browser verifies that signature.
+
+But why trust the CA? Because your browser and OS ship with a list of root CAs they consider trustworthy — the root store. On Windows, this is managed by the OS. On macOS, by Keychain. Firefox maintains its own bundle independently of the OS.
+
+In practice, root CAs don't sign end-entity certificates directly. They use intermediate CAs — which they sign — and intermediates sign your certificate. This is the chain: root → intermediate → end-entity. The browser verifies every link.
+
+For a certificate to be trusted, the browser checks: the signature chain leads to a trusted root; no certificate in the chain has expired; the domain in the certificate matches the domain you're connecting to; none of the certificates have been revoked.
+
+Where trust breaks: a compromised or malicious CA. In 2011, DigiNotar — a Dutch CA — was breached. Attackers issued valid certificates for domains including google.com. Any browser trusting DigiNotar's root would accept these as legitimate. DigiNotar was removed from all root stores. The damage was done.
+
+Certificate Transparency (CT) is the response. Since 2018, browsers require that publicly-trusted certificates appear in public CT logs. This doesn't prevent mis-issuance, but it makes it detectable after the fact.
