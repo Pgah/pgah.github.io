@@ -137,7 +137,7 @@ const postsJson = JSON.stringify(posts.map(p => {
       const prefix = m[1], partial = m[2];
 
       if (!tabCycle) {
-        const matches = posts.filter(p => p.id.startsWith(partial));
+        const matches = posts.filter(p => p.id.toLowerCase().startsWith(partial.toLowerCase()));
         if (!matches.length) return;
         if (matches.length === 1) {
           termInput.value = prefix + matches[0].id;
