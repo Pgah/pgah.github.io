@@ -12,6 +12,9 @@ const postsJson = JSON.stringify(posts.map(p => {
     id: p.id,
     date: p.data.date.valueOf(),
     dateStr: `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${d.getUTCFullYear()}`,
+    title: p.data.title,
+    description: p.data.description,
+    tags: p.data.tags,
   };
 }));
 ---
@@ -34,7 +37,16 @@ const postsJson = JSON.stringify(posts.map(p => {
           <div class="listing-row">
             <span class="col-perm perm">-rw-r--r--</span>
             <span class="col-date date">{dateStr}</span>
-            <a class="col-name" href={`/posts/${post.id}`}>{post.data.title}</a>
+            <div class="col-name-wrap">
+              <a class="col-name" href={`/posts/${post.id}`}>{post.data.title}</a>
+              {post.data.tags.length > 0 && (
+                <span class="tags-inline">
+                  {post.data.tags.map(tag => (
+                    <button class="tag-chip" data-tag={tag} type="button">[{tag}]</button>
+                  ))}
+                </span>
+              )}
+            </div>
           </div>
         );
       })}
@@ -62,19 +74,34 @@ const postsJson = JSON.stringify(posts.map(p => {
   const posts = JSON.parse(document.getElementById('posts-data').textContent);
   let sortKey = 'date';
   let sortDir = -1;
+  let activeTag = null;
+  const cmdHistory = [];
+  let historyIndex = -1;
 
   const body = document.getElementById('listing-body');
   const btnDate = document.getElementById('sort-date');
   const btnName = document.getElementById('sort-name');
+  const termInput = document.getElementById('terminal-input');
+  const termOutput = document.getElementById('terminal-output');
+  const cursorLine = document.getElementById('cursor-line');
 
   const rows = Array.from(body.querySelectorAll('.listing-row'));
   rows.forEach((row, i) => {
     row.dataset.date = posts[i].date;
     row.dataset.id = posts[i].id;
+    row.dataset.tags = posts[i].tags.join(',');
   });
 
   function thirdWord(id) {
     return id.split('-').slice(2).join('-');
+  }
+
+  function setActiveTag(tag) {
+    activeTag = tag;
+    document.querySelectorAll('.tag-chip').forEach(c => {
+      c.classList.toggle('tag-active', c.dataset.tag === tag);
+    });
+    render();
   }
 
   function render() {
@@ -82,9 +109,11 @@ const postsJson = JSON.stringify(posts.map(p => {
       if (sortKey === 'date') return (Number(a.dataset.date) - Number(b.dataset.date)) * sortDir;
       return thirdWord(a.dataset.id).localeCompare(thirdWord(b.dataset.id)) * sortDir;
     });
-
-    sorted.forEach(row => body.appendChild(row));
-
+    sorted.forEach(row => {
+      const tags = row.dataset.tags ? row.dataset.tags.split(',') : [];
+      row.style.display = (!activeTag || tags.includes(activeTag)) ? '' : 'none';
+      body.appendChild(row);
+    });
     btnDate.querySelector('.sort-arrow').textContent = sortKey === 'date' ? (sortDir === -1 ? '↓' : '↑') : '';
     btnName.querySelector('.sort-arrow').textContent = sortKey === 'name' ? (sortDir === -1 ? '↓' : '↑') : '';
   }
@@ -101,19 +130,26 @@ const postsJson = JSON.stringify(posts.map(p => {
     render();
   });
 
-  const termInput = document.getElementById('terminal-input');
-  const termOutput = document.getElementById('terminal-output');
-  const cursorLine = document.getElementById('cursor-line');
+  body.addEventListener('click', (e) => {
+    const chip = e.target.closest('.tag-chip');
+    if (!chip) return;
+    setActiveTag(activeTag === chip.dataset.tag ? null : chip.dataset.tag);
+  });
 
   cursorLine.addEventListener('click', () => termInput.focus());
 
-  function escapeHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   let currentGroup = null;
 
-  function addOutputLine(html) {
+  function addLine(html) {
     const div = document.createElement('div');
     div.className = 'term-out-line';
     div.innerHTML = html;
@@ -126,35 +162,55 @@ const postsJson = JSON.stringify(posts.map(p => {
     termOutput.appendChild(currentGroup);
   }
 
+  function tagSpan(t) {
+    return `<span class="term-tag">[${esc(t)}]</span>`;
+  }
+
+  function nfLabel(label) {
+    return `<span class="man-section" style="display:inline-block;width:8ch">${label}</span>`;
+  }
+
   let tabCycle = null;
 
   termInput.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      tabCycle = null;
+      if (historyIndex < cmdHistory.length - 1) {
+        historyIndex++;
+        termInput.value = cmdHistory[cmdHistory.length - 1 - historyIndex];
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      tabCycle = null;
+      if (historyIndex > 0) {
+        historyIndex--;
+        termInput.value = cmdHistory[cmdHistory.length - 1 - historyIndex];
+      } else {
+        historyIndex = -1;
+        termInput.value = '';
+      }
+      return;
+    }
     if (e.key === 'Tab') {
       e.preventDefault();
       const val = termInput.value;
-      const m = val.match(/^(cd\s+)(.*)$/);
+      const m = val.match(/^(cd\s+|cat\s+|man\s+)(.*)$/);
       if (!m) return;
-      const prefix = m[1], partial = m[2];
-
+      const [, prefix, partial] = m;
+      const matches = posts.filter(p => p.id.toLowerCase().startsWith(partial.toLowerCase()));
+      if (!matches.length) return;
       if (!tabCycle) {
-        const matches = posts.filter(p => p.id.toLowerCase().startsWith(partial.toLowerCase()));
-        if (!matches.length) return;
-        if (matches.length === 1) {
-          termInput.value = prefix + matches[0].id;
-          return;
-        }
+        if (matches.length === 1) { termInput.value = prefix + matches[0].id; return; }
         let common = matches[0].id;
         for (const p of matches) while (!p.id.startsWith(common)) common = common.slice(0, -1);
-        if (common !== partial) {
-          termInput.value = prefix + common;
-          tabCycle = { matches, index: -1 };
-        } else {
-          tabCycle = { matches, index: 0 };
-          termInput.value = prefix + matches[0].id;
-        }
+        if (common !== partial) { termInput.value = prefix + common; tabCycle = { matches, index: -1 }; }
+        else { tabCycle = { matches, index: 0 }; termInput.value = prefix + matches[0].id; }
       } else {
         tabCycle.index = (tabCycle.index + 1) % tabCycle.matches.length;
-        const pfx = termInput.value.match(/^(cd\s+)/);
+        const pfx = termInput.value.match(/^(cd\s+|cat\s+|man\s+)/);
         if (pfx) termInput.value = pfx[1] + tabCycle.matches[tabCycle.index].id;
       }
       return;
@@ -162,41 +218,150 @@ const postsJson = JSON.stringify(posts.map(p => {
 
     tabCycle = null;
     if (e.key !== 'Enter') return;
+
     const cmd = termInput.value.trim();
     termInput.value = '';
+    historyIndex = -1;
+    if (cmd) { cmdHistory.push(cmd); if (cmdHistory.length > 100) cmdHistory.shift(); }
 
     newGroup();
-    addOutputLine(`<span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<span class="term-cmd">${escapeHtml(cmd)}</span>`);
-
+    addLine(`<span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<span class="term-cmd">${esc(cmd)}</span>`);
     if (!cmd) return;
 
     const parts = cmd.split(/\s+/);
 
     if (parts[0] === 'cd' && parts[1]) {
       const target = parts[1];
+      if (target === '..') { window.location.href = '/'; return; }
       const post = posts.find(p => p.id === target);
-      if (post) {
-        window.location.href = `/posts/${post.id}`;
-      } else {
-        addOutputLine(`<span class="term-err">bash: cd: ${escapeHtml(target)}: No such file or directory</span>`);
-      }
-    } else if (cmd === 'ls -la' || cmd === 'ls -la ~/blogs') {
-      posts.forEach(p => addOutputLine(`<span class="perm">-rw-r--r--</span>&nbsp;&nbsp;<span class="date">${p.dateStr}</span>&nbsp;&nbsp;<span class="term-cmd">${p.id}</span>`));
+      if (post) window.location.href = `/posts/${post.id}`;
+      else addLine(`<span class="term-err">bash: cd: ${esc(target)}: No such file or directory</span>`);
+
+    } else if (parts[0] === 'cat' && parts[1]) {
+      const target = parts[1].replace(/\.md$/, '');
+      const post = posts.find(p => p.id === target);
+      if (post) window.location.href = `/posts/${post.id}`;
+      else addLine(`<span class="term-err">cat: ${esc(parts[1])}: No such file or directory</span>`);
+
     } else if (parts[0] === 'ls') {
-      posts.forEach(p => addOutputLine(`<span class="term-cmd">${p.id}</span>`));
+      const tagFlagIdx = parts.findIndex(p => p === '--tag');
+      if (tagFlagIdx !== -1) {
+        const tag = parts[tagFlagIdx + 1];
+        if (!tag) {
+          setActiveTag(null);
+          addLine(`<span class="term-dim">tag filter cleared</span>`);
+        } else {
+          const newTag = activeTag === tag ? null : tag;
+          setActiveTag(newTag);
+          if (!newTag) {
+            addLine(`<span class="term-dim">tag filter cleared</span>`);
+          } else {
+            const filtered = posts.filter(p => p.tags.includes(tag));
+            if (!filtered.length) {
+              addLine(`<span class="term-err">ls: no posts tagged "${esc(tag)}"</span>`);
+            } else {
+              addLine(`<span class="term-dim">tag: ${tagSpan(tag)} — ${filtered.length} post${filtered.length !== 1 ? 's' : ''}:</span>`);
+              filtered.forEach(p => addLine(`<span class="perm">-rw-r--r--</span>&nbsp;&nbsp;<span class="date">${p.dateStr}</span>&nbsp;&nbsp;<a class="term-link" href="/posts/${p.id}">${esc(p.title)}</a>`));
+            }
+          }
+        }
+      } else if (cmd === 'ls -la' || cmd === 'ls -la ~/blogs' || cmd === 'ls -l') {
+        posts.forEach(p => addLine(`<span class="perm">-rw-r--r--</span>&nbsp;&nbsp;<span class="date">${p.dateStr}</span>&nbsp;&nbsp;<span class="term-cmd">${p.id}</span>`));
+      } else {
+        posts.forEach(p => addLine(`<span class="term-cmd">${p.id}</span>`));
+      }
+
+    } else if (parts[0] === 'grep' && parts.length > 1) {
+      const pattern = parts.slice(1).join(' ').replace(/^["']|["']$/g, '').toLowerCase();
+      const matches = posts.filter(p =>
+        p.title.toLowerCase().includes(pattern) ||
+        p.description.toLowerCase().includes(pattern) ||
+        p.tags.some(t => t.toLowerCase().includes(pattern))
+      );
+      if (!matches.length) {
+        addLine(`<span class="term-err">grep: no matches for "${esc(parts.slice(1).join(' '))}"</span>`);
+      } else {
+        addLine(`<span class="term-dim">${matches.length} match${matches.length !== 1 ? 'es' : ''}:</span>`);
+        matches.forEach(p => {
+          const tagsHtml = p.tags.map(tagSpan).join(' ');
+          const desc = p.description.length > 85 ? p.description.slice(0, 85) + '…' : p.description;
+          addLine(`<a class="term-link" href="/posts/${p.id}">${esc(p.title)}</a>&nbsp;${tagsHtml}`);
+          addLine(`<span class="term-desc">&nbsp;&nbsp;${esc(desc)}</span>`);
+        });
+      }
+
+    } else if (parts[0] === 'man' && parts.length > 1) {
+      const target = parts[1];
+      if (target === 'about') { window.location.href = '/about'; return; }
+      const exact = posts.find(p => p.id === target);
+      const partialMatches = posts.filter(p => p.id.includes(target));
+      const post = exact || (partialMatches.length === 1 ? partialMatches[0] : null);
+      if (!post && partialMatches.length > 1) {
+        addLine(`<span class="term-err">man: ambiguous — did you mean: ${partialMatches.map(p => p.id).join(', ')}?</span>`);
+      } else if (post) {
+        addLine(`<span class="man-name">${esc(post.title)}</span>`);
+        addLine(`<span class="term-dim">────────────────────────────────</span>`);
+        addLine(`<span class="man-section">DESCRIPTION</span>`);
+        addLine(`&nbsp;&nbsp;&nbsp;&nbsp;${esc(post.description)}`);
+        if (post.tags.length) {
+          addLine(`<span class="man-section">TAGS</span>`);
+          addLine(`&nbsp;&nbsp;&nbsp;&nbsp;${post.tags.map(tagSpan).join(' ')}`);
+        }
+        addLine(`<span class="man-section">DATE</span>`);
+        addLine(`&nbsp;&nbsp;&nbsp;&nbsp;${post.dateStr}`);
+        addLine(`<span class="term-dim">&nbsp;&nbsp;→ <a class="term-link" href="/posts/${post.id}">cd ${esc(post.id)}</a></span>`);
+      } else {
+        addLine(`<span class="term-err">man: no entry for "${esc(target)}" — try: grep ${esc(target)}</span>`);
+      }
+
+    } else if (cmd === 'whoami') {
+      addLine(`sleeper`);
+      addLine(`<span class="term-dim">→ <a class="term-link" href="/about">man about</a></span>`);
+
+    } else if (cmd === 'help') {
+      const cmds = [
+        ['ls', 'list all posts'],
+        ['ls -la', 'list with details'],
+        ['ls --tag &lt;tag&gt;', 'filter listing by tag'],
+        ['ls --tag', 'clear tag filter'],
+        ['cd &lt;post-id&gt;', 'open a post'],
+        ['cat &lt;post-id&gt;', 'open a post (alias)'],
+        ['grep &lt;term&gt;', 'search titles, descriptions, tags'],
+        ['man &lt;post-id&gt;', 'show post info'],
+        ['man about', 'view about page'],
+        ['whoami', 'current user'],
+        ['neofetch', 'system info'],
+        ['clear', 'clear terminal output'],
+      ];
+      addLine(`<span class="term-dim">available commands:</span>`);
+      cmds.forEach(([c, d]) => {
+        addLine(`&nbsp;&nbsp;<span class="term-cmd" style="display:inline-block;min-width:28ch">${c}</span><span class="term-desc">${d}</span>`);
+      });
+      addLine(`<span class="term-dim">tip: Tab autocompletes post IDs &nbsp;↑↓ navigates history</span>`);
+
+    } else if (cmd === 'neofetch') {
+      const uniqueTags = [...new Set(posts.flatMap(p => p.tags))];
+      const latest = posts[0];
+      addLine(`<span class="term-cmd">sleeper</span><span class="term-dim">@</span><span class="term-cmd">matrix-303.pages.dev</span>`);
+      addLine(`<span class="term-dim">────────────────────────────</span>`);
+      addLine(`${nfLabel('Posts')}${posts.length}`);
+      addLine(`${nfLabel('Tags')}${uniqueTags.map(tagSpan).join(' ')}`);
+      addLine(`${nfLabel('Latest')}<a class="term-link" href="/posts/${latest.id}">${esc(latest.title)}</a> <span class="term-dim">(${latest.dateStr})</span>`);
+      addLine(`${nfLabel('Shell')}bash (matrix terminal v2)`);
+      addLine(`${nfLabel('Theme')}One Dark Pro`);
+      addLine(`${nfLabel('Site')}<a class="term-link" href="/">matrix-303.pages.dev</a>`);
+
     } else if (cmd === 'clear') {
       termOutput.innerHTML = '';
+
     } else {
-      addOutputLine(`<span class="term-err">bash: ${escapeHtml(parts[0])}: command not found</span>`);
+      addLine(`<span class="term-err">bash: ${esc(parts[0])}: command not found — try 'help'</span>`);
     }
   });
 </script>
 
 <style>
-.listing {
-  width: 100%;
-  margin-bottom: 2rem;
-}
+.listing { width: 100%; margin-bottom: 2rem; }
 .listing-header {
   display: grid;
   grid-template-columns: 16ch 16ch 1fr;
@@ -207,20 +372,10 @@ const postsJson = JSON.stringify(posts.map(p => {
   padding-bottom: 0.25rem;
   border-bottom: 1px solid var(--fg-muted);
 }
-.listing-header .col-date {
-  padding-left: 9ch;
-  color: var(--fg-bright);
-}
-.listing-header .col-name {
-  padding-left: 25ch;
-}
-.sort-btn {
-  cursor: pointer;
-  user-select: none;
-}
-.sort-btn:hover {
-  color: var(--fg-bright);
-}
+.listing-header .col-date { padding-left: 9ch; color: var(--fg-bright); }
+.listing-header .col-name { padding-left: 25ch; }
+.sort-btn { cursor: pointer; user-select: none; }
+.sort-btn:hover { color: var(--fg-bright); }
 .listing-row {
   display: grid;
   grid-template-columns: 16ch 16ch 1fr;
@@ -228,11 +383,30 @@ const postsJson = JSON.stringify(posts.map(p => {
   padding: 0.15rem 0;
   align-items: baseline;
 }
+.col-name-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.5ch;
+}
 .perm  { color: var(--fg-bright); }
 .muted { color: var(--fg-muted); }
 .date  { color: var(--fg-bright); }
 .col-name { color: var(--fg-bright); }
-.col-desc { color: var(--fg-dim); font-size: 0.9rem; }
+.tags-inline { display: inline-flex; flex-wrap: wrap; gap: 0 0.4ch; }
+.tag-chip {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--fg-muted);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  padding: 0;
+  line-height: inherit;
+  transition: color 0.15s;
+}
+.tag-chip:hover { color: var(--fg); }
+.tag-chip.tag-active { color: var(--fg-bright); text-decoration: underline; }
 .cursor-line {
   margin-top: 1rem;
   display: flex;
@@ -245,21 +419,23 @@ const postsJson = JSON.stringify(posts.map(p => {
   border: none;
   outline: none;
   color: var(--fg-bright);
-  font-family: 'Courier New', monospace;
+  font-family: var(--font);
   font-size: inherit;
   caret-color: var(--fg-bright);
   flex: 1;
   min-width: 0;
 }
-.term-group {
-  margin-top: 1.5rem;
-}
-.term-out-line {
-  margin-top: 0.25rem;
-  font-size: inherit;
-}
+.term-group { margin-top: 1.5rem; }
+.term-out-line { margin-top: 0.25rem; font-size: inherit; }
 .term-cmd { color: var(--fg-bright); }
 .term-err { color: #e05252; }
+.term-dim { color: var(--fg-dim); }
+.term-desc { color: var(--fg-muted); font-size: 0.9em; }
+.term-link { color: var(--fg-bright); }
+.term-link:hover { text-decoration: underline; color: #fff; }
+.term-tag { color: var(--fg-muted); font-size: 0.85em; }
+.man-section { color: var(--fg-bright); }
+.man-name { color: var(--fg-bright); font-size: 1.05em; }
 
 @media (max-width: 600px) {
   .listing-header { display: none; }
@@ -269,5 +445,7 @@ const postsJson = JSON.stringify(posts.map(p => {
     margin-bottom: 1rem;
   }
   .perm { display: none; }
+  .col-date { font-size: 0.8rem; color: var(--fg-dim); }
+  .col-name-wrap { flex-direction: column; gap: 0.2rem; }
 }
 </style>
