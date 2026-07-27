@@ -181,7 +181,7 @@ const postsJson = JSON.stringify(posts.map(p => {
   ];
   const KEYBOARD_ROWS = ['qwerty','qwertz','azerty','asdfgh','zxcvbn','qweasd'];
   const PW_BARS   = ['■□□□□','■■□□□','■■■□□','■■■■□','■■■■■'];
-  const PW_LABELS = ['ÇOK ZAYIF','ZAYIF','ORTA','GÜÇLÜ','ÇOK GÜÇLÜ'];
+  const PW_LABELS = ['VERY WEAK','WEAK','MODERATE','STRONG','VERY STRONG'];
   const PW_COLORS = ['#e05252','#ff8c00','var(--fg-dim)','var(--fg)','var(--green)'];
 
   function analyzePassword(pw) {
@@ -202,12 +202,12 @@ const postsJson = JSON.stringify(posts.map(p => {
 
     const warnings = [];
     const lower = pw.toLowerCase();
-    if (COMMON_PASSWORDS.includes(lower)) warnings.push('yaygın şifre listesinde bulundu');
-    if (/(.)\1{2,}/.test(pw)) warnings.push('tekrarlanan karakter tespit edildi (örn: aaa)');
-    if (/012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321/.test(pw)) warnings.push('sayı ardışıklığı tespit edildi');
-    if (/abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i.test(pw)) warnings.push('harf ardışıklığı tespit edildi');
+    if (COMMON_PASSWORDS.includes(lower)) warnings.push('found in common passwords list');
+    if (/(.)\1{2,}/.test(pw)) warnings.push('repeated characters detected (e.g. aaa)');
+    if (/012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321/.test(pw)) warnings.push('sequential digits detected');
+    if (/abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i.test(pw)) warnings.push('sequential letters detected');
     for (const seq of KEYBOARD_ROWS) {
-      if (lower.includes(seq)) { warnings.push(`'${seq}' klavye dizisi tespit edildi`); break; }
+      if (lower.includes(seq)) { warnings.push(`'${seq}' keyboard pattern detected`); break; }
     }
 
     let score = 0;
@@ -219,26 +219,26 @@ const postsJson = JSON.stringify(posts.map(p => {
     else if (warnings.length >= 2 && score > 0) score--;
 
     const parts = [];
-    if (hasLower)  parts.push('küçük (26)');
-    if (hasUpper)  parts.push('büyük (26)');
-    if (hasDigit)  parts.push('sayı (10)');
-    if (hasSymbol) parts.push('sembol (~32)');
+    if (hasLower)  parts.push('lower (26)');
+    if (hasUpper)  parts.push('upper (26)');
+    if (hasDigit)  parts.push('digits (10)');
+    if (hasSymbol) parts.push('symbols (~32)');
     const charsetDesc = parts.join(' + ') + ` = ${charsetSize}`;
 
     return { entropy, charsetDesc, crackSeconds, warnings, score, hasLower, hasUpper, hasDigit, hasSymbol };
   }
 
   function formatCrackTime(sec) {
-    if (!isFinite(sec) || sec >= 1e30) return 'evrenin ömründen uzun';
-    if (sec < 1e-7)    return 'anlık (< 1ns)';
-    if (sec < 0.001)   return `${(sec * 1e6).toFixed(0)} mikrosaniye`;
-    if (sec < 1)       return `${(sec * 1000).toFixed(0)} milisaniye`;
-    if (sec < 60)      return `${sec.toFixed(1)} saniye`;
-    if (sec < 3600)    return `${(sec / 60).toFixed(0)} dakika`;
-    if (sec < 86400)   return `${(sec / 3600).toFixed(0)} saat`;
-    if (sec < 31536000) return `${(sec / 86400).toFixed(0)} gün`;
-    if (sec < 3.154e10) return `${(sec / 31536000).toFixed(0)} yıl`;
-    return `${(sec / 3.154e9).toFixed(0)} yüzyıl`;
+    if (!isFinite(sec) || sec >= 1e30) return 'longer than the age of the universe';
+    if (sec < 1e-7)    return 'instant (< 1ns)';
+    if (sec < 0.001)   return `${(sec * 1e6).toFixed(0)} microseconds`;
+    if (sec < 1)       return `${(sec * 1000).toFixed(0)} milliseconds`;
+    if (sec < 60)      return `${sec.toFixed(1)} seconds`;
+    if (sec < 3600)    return `${(sec / 60).toFixed(0)} minutes`;
+    if (sec < 86400)   return `${(sec / 3600).toFixed(0)} hours`;
+    if (sec < 31536000) return `${(sec / 86400).toFixed(0)} days`;
+    if (sec < 3.154e10) return `${(sec / 31536000).toFixed(0)} years`;
+    return `${(sec / 3.154e9).toFixed(0)} centuries`;
   }
 
   function generatePassword(length, useSymbols) {
@@ -414,7 +414,7 @@ const postsJson = JSON.stringify(posts.map(p => {
         ['clear', 'clear terminal output'],
       ];
       const secCmds = [
-        ['pwcheck &lt;şifre&gt;', 'analyze password strength'],
+        ['pwcheck &lt;password&gt;', 'analyze password strength'],
         ['pwgen', 'generate a 16-char password'],
         ['pwgen -l &lt;n&gt; -n &lt;k&gt;', 'n chars, k passwords (max 10)'],
         ['pwgen --no-symbols', 'no symbols'],
@@ -447,32 +447,32 @@ const postsJson = JSON.stringify(posts.map(p => {
     } else if (parts[0] === 'pwcheck') {
       const pw = cmd.slice('pwcheck'.length).trim();
       if (!pw) {
-        addLine(`<span class="term-dim">kullanım: pwcheck &lt;şifre&gt;</span>`);
-        addLine(`<span class="term-dim">örn:&nbsp;&nbsp;&nbsp;pwcheck MyP@ssw0rd123!</span>`);
+        addLine(`<span class="term-dim">usage: pwcheck &lt;password&gt;</span>`);
+        addLine(`<span class="term-dim">e.g.:&nbsp;&nbsp;pwcheck MyP@ssw0rd123!</span>`);
       } else {
         const a = analyzePassword(pw);
         const lbl = (s) => `<span style="display:inline-block;min-width:16ch;color:var(--fg-dim)">${s}</span>`;
-        addLine(`<span style="color:var(--cyan)">[INFO]</span> <span class="term-dim">Şifre yalnızca tarayıcınızda analiz edilir.</span>`);
+        addLine(`<span style="color:var(--cyan)">[INFO]</span> <span class="term-dim">Password is analyzed locally in your browser.</span>`);
         addLine(`<span class="term-dim">────────────────────────────────</span>`);
-        addLine(lbl('Uzunluk') + `<span class="term-cmd">${pw.length} karakter</span>`);
-        addLine(lbl('Karakter seti') + esc(a.charsetDesc));
+        addLine(lbl('Length') + `<span class="term-cmd">${pw.length} chars</span>`);
+        addLine(lbl('Charset') + esc(a.charsetDesc));
         addLine(lbl('Entropy') + `${a.entropy.toFixed(1)} bit`);
-        addLine(lbl('Tahm. kırılma') + `~${esc(formatCrackTime(a.crackSeconds))} <span class="term-dim">(GPU brute-force)</span>`);
-        addLine(lbl('Güç') + `<span style="color:${PW_COLORS[a.score]}">${PW_BARS[a.score]}&nbsp;&nbsp;${PW_LABELS[a.score]}</span>`);
+        addLine(lbl('Est. crack time') + `~${esc(formatCrackTime(a.crackSeconds))} <span class="term-dim">(GPU brute-force)</span>`);
+        addLine(lbl('Strength') + `<span style="color:${PW_COLORS[a.score]}">${PW_BARS[a.score]}&nbsp;&nbsp;${PW_LABELS[a.score]}</span>`);
         if (a.warnings.length) {
           addLine(`<span class="term-dim">────────────────────────────────</span>`);
           a.warnings.forEach(w => addLine(`<span style="color:#ff8c00">[WARN]</span> ${esc(w)}`));
         }
         const tips = [];
-        if (pw.length < 12) tips.push('En az 12 karakter kullanın (16+ önerilir)');
-        else if (pw.length < 16) tips.push('16+ karakter daha güvenli olur');
-        if (!a.hasUpper)  tips.push('Büyük harf ekleyin (A-Z)');
-        if (!a.hasDigit)  tips.push('Sayı ekleyin (0-9)');
-        if (!a.hasSymbol) tips.push('Sembol ekleyin (!@#$ vb.)');
-        if (a.score < 3) tips.push('&rarr; <span class="term-cmd">pwgen -l 20</span> ile güçlü şifre üretebilirsiniz');
+        if (pw.length < 12) tips.push('Use at least 12 characters (16+ recommended)');
+        else if (pw.length < 16) tips.push('16+ characters would be stronger');
+        if (!a.hasUpper)  tips.push('Add uppercase letters (A-Z)');
+        if (!a.hasDigit)  tips.push('Add digits (0-9)');
+        if (!a.hasSymbol) tips.push('Add symbols (!@#$ etc.)');
+        if (a.score < 3) tips.push('&rarr; generate a strong one with <span class="term-cmd">pwgen -l 20</span>');
         if (tips.length) {
           addLine(`<span class="term-dim">────────────────────────────────</span>`);
-          addLine(`<span class="term-dim">Öneriler:</span>`);
+          addLine(`<span class="term-dim">Suggestions:</span>`);
           tips.forEach(t => addLine(`&nbsp;&nbsp;<span class="term-dim">+</span> ${t}`));
         }
       }
@@ -482,22 +482,22 @@ const postsJson = JSON.stringify(posts.map(p => {
       for (let i = 1; i < parts.length; i++) {
         if (parts[i] === '-l') {
           const v = parseInt(parts[i + 1], 10);
-          if (!parts[i + 1] || isNaN(v) || v < 8 || v > 128) { genErr = 'pwgen: -l değeri 8-128 arasında olmalı'; break; }
+          if (!parts[i + 1] || isNaN(v) || v < 8 || v > 128) { genErr = 'pwgen: -l value must be between 8-128'; break; }
           genLen = v; i++;
         } else if (parts[i] === '-n') {
           const v = parseInt(parts[i + 1], 10);
-          if (!parts[i + 1] || isNaN(v) || v < 1 || v > 10) { genErr = 'pwgen: -n değeri 1-10 arasında olmalı'; break; }
+          if (!parts[i + 1] || isNaN(v) || v < 1 || v > 10) { genErr = 'pwgen: -n value must be between 1-10'; break; }
           genCount = v; i++;
         } else if (parts[i] === '--no-symbols') {
           genSymbols = false;
         } else {
-          genErr = `pwgen: bilinmeyen seçenek: ${esc(parts[i])}`; break;
+          genErr = `pwgen: unknown option: ${esc(parts[i])}`; break;
         }
       }
       if (genErr) {
         addLine(`<span class="term-err">${genErr}</span>`);
       } else {
-        addLine(`<span style="color:var(--cyan)">[INFO]</span> <span class="term-dim">Şifreler yalnızca tarayıcınızda üretilir.</span>`);
+        addLine(`<span style="color:var(--cyan)">[INFO]</span> <span class="term-dim">Passwords are generated locally in your browser.</span>`);
         addLine(`<span class="term-dim">────────────────────────────────</span>`);
         for (let i = 0; i < genCount; i++) {
           addLine(`&nbsp;&nbsp;<span class="term-cmd">${esc(generatePassword(genLen, genSymbols))}</span>`);
@@ -506,7 +506,7 @@ const postsJson = JSON.stringify(posts.map(p => {
         const entropy = genLen * Math.log2(poolSize);
         const score = entropy < 28 ? 0 : entropy < 36 ? 1 : entropy < 60 ? 2 : entropy < 128 ? 3 : 4;
         addLine(`<span class="term-dim">────────────────────────────────</span>`);
-        addLine(`<span class="term-dim">Entropy: ~${entropy.toFixed(0)} bit &nbsp;|&nbsp; Güç: <span style="color:${PW_COLORS[score]}">${PW_BARS[score]} ${PW_LABELS[score]}</span></span>`);
+        addLine(`<span class="term-dim">Entropy: ~${entropy.toFixed(0)} bit &nbsp;|&nbsp; Strength: <span style="color:${PW_COLORS[score]}">${PW_BARS[score]} ${PW_LABELS[score]}</span></span>`);
       }
 
     } else {
