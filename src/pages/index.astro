@@ -178,6 +178,16 @@ const postsJson = JSON.stringify(posts.map(p => {
     'qazwsx','michael','football','batman','welcome','login','admin',
     'hunter2','password1','access','hello','123456789','000000','111111',
     'password123','test','user','pass','root','toor','changeme',
+    // Turkish names
+    'emre','ali','mehmet','mustafa','ahmet','fatma','ayse','zeynep',
+    'murat','hasan','huseyin','ibrahim','ismail','yusuf','omer','kemal',
+    'burak','serkan','tolga','volkan','berk','ege','arda','kaan','eren',
+    'selin','elif','buse','merve','esra','dilan','asli','pinar','deniz',
+    // International names
+    'john','jane','alex','david','james','robert','mike','chris','mark',
+    'lisa','anna','sara','emma','kate','julia','laura','sofia','maria',
+    // Name+number combos
+    'emre123','ali123','mehmet123','admin123','user123','test123',
   ];
   const KEYBOARD_ROWS = ['qwerty','qwertz','azerty','asdfgh','zxcvbn','qweasd'];
   const PW_BARS   = ['■□□□□','■■□□□','■■■□□','■■■■□','■■■■■'];
@@ -215,8 +225,9 @@ const postsJson = JSON.stringify(posts.map(p => {
     if (entropy >= 36) score = 2;
     if (entropy >= 60) score = 3;
     if (entropy >= 128) score = 4;
+    if (pw.length < 8 && score > 1) score = 1;
     if (COMMON_PASSWORDS.includes(lower)) score = 0;
-    else if (warnings.length >= 2 && score > 0) score--;
+    else if (warnings.length >= 1 && score > 0) score--;
 
     const parts = [];
     if (hasLower)  parts.push('lower (26)');
