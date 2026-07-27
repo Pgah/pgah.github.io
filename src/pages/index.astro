@@ -423,6 +423,7 @@ const postsJson = JSON.stringify(posts.map(p => {
         ['whoami', 'current user'],
         ['neofetch', 'system info'],
         ['clear', 'clear terminal output'],
+        ['tour', 'interactive feature overview'],
       ];
       const secCmds = [
         ['pwcheck &lt;password&gt;', 'analyze password strength'],
@@ -454,6 +455,35 @@ const postsJson = JSON.stringify(posts.map(p => {
 
     } else if (cmd === 'clear') {
       termOutput.innerHTML = '';
+
+    } else if (cmd === 'tour') {
+      const tl = (s) => `<span style="display:inline-block;min-width:18ch;color:var(--cyan)">${s}</span>`;
+      addLine(`<span class="term-dim">╔══════════════════════════════════════╗</span>`);
+      addLine(`<span class="term-dim">║</span>           site features              <span class="term-dim">║</span>`);
+      addLine(`<span class="term-dim">╚══════════════════════════════════════╝</span>`);
+      addLine('');
+      addLine(`&nbsp;&nbsp;<span style="color:var(--green)">📂 navigation</span>`);
+      addLine(`&nbsp;&nbsp;<span class="term-dim">──────────────────────────────────────</span>`);
+      addLine(`&nbsp;&nbsp;${tl('ls')}list all posts`);
+      addLine(`&nbsp;&nbsp;${tl('ls -la')}list with details`);
+      addLine(`&nbsp;&nbsp;${tl('ls --tag &lt;tag&gt;')}filter by tag`);
+      addLine(`&nbsp;&nbsp;${tl('cd &lt;id&gt;')}open a post`);
+      addLine(`&nbsp;&nbsp;${tl('grep &lt;term&gt;')}search titles, descriptions, tags`);
+      addLine(`&nbsp;&nbsp;${tl('man &lt;id&gt;')}show post info`);
+      addLine('');
+      addLine(`&nbsp;&nbsp;<span style="color:var(--green)">🔒 security tools</span>`);
+      addLine(`&nbsp;&nbsp;<span class="term-dim">──────────────────────────────────────</span>`);
+      addLine(`&nbsp;&nbsp;${tl('pwcheck &lt;pw&gt;')}analyze password strength`);
+      addLine(`&nbsp;&nbsp;${tl('pwgen')}generate a 16-char password`);
+      addLine(`&nbsp;&nbsp;${tl('pwgen -l &lt;n&gt;')}custom length (8–128)`);
+      addLine(`&nbsp;&nbsp;${tl('pwgen -n &lt;k&gt;')}generate k passwords (max 10)`);
+      addLine('');
+      addLine(`&nbsp;&nbsp;<span style="color:var(--green)">⌨️  shortcuts</span>`);
+      addLine(`&nbsp;&nbsp;<span class="term-dim">──────────────────────────────────────</span>`);
+      addLine(`&nbsp;&nbsp;<span class="term-dim" style="display:inline-block;min-width:18ch">Tab</span>autocomplete post IDs`);
+      addLine(`&nbsp;&nbsp;<span class="term-dim" style="display:inline-block;min-width:18ch">↑ / ↓</span>navigate command history`);
+      addLine('');
+      addLine(`&nbsp;&nbsp;<span class="term-dim">type 'help' for the full command reference</span>`);
 
     } else if (parts[0] === 'pwcheck') {
       const pw = cmd.slice('pwcheck'.length).trim();
