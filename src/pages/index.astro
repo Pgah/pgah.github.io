@@ -170,6 +170,86 @@ const postsJson = JSON.stringify(posts.map(p => {
     return `<span class="man-section" style="display:inline-block;width:8ch">${label}</span>`;
   }
 
+  // --- password tool helpers ---
+  const COMMON_PASSWORDS = [
+    'password','123456','12345678','qwerty','abc123','monkey','1234567',
+    'letmein','trustno1','dragon','baseball','iloveyou','master','sunshine',
+    'ashley','bailey','passw0rd','shadow','123123','654321','superman',
+    'qazwsx','michael','football','batman','welcome','login','admin',
+    'hunter2','password1','access','hello','123456789','000000','111111',
+    'password123','test','user','pass','root','toor','changeme',
+  ];
+  const KEYBOARD_ROWS = ['qwerty','qwertz','azerty','asdfgh','zxcvbn','qweasd'];
+  const PW_BARS   = ['■□□□□','■■□□□','■■■□□','■■■■□','■■■■■'];
+  const PW_LABELS = ['ÇOK ZAYIF','ZAYIF','ORTA','GÜÇLÜ','ÇOK GÜÇLÜ'];
+  const PW_COLORS = ['#e05252','#ff8c00','var(--fg-dim)','var(--fg)','var(--green)'];
+
+  function analyzePassword(pw) {
+    const hasLower  = /[a-z]/.test(pw);
+    const hasUpper  = /[A-Z]/.test(pw);
+    const hasDigit  = /[0-9]/.test(pw);
+    const hasSymbol = /[^a-zA-Z0-9]/.test(pw);
+    let charsetSize = 0;
+    if (hasLower)  charsetSize += 26;
+    if (hasUpper)  charsetSize += 26;
+    if (hasDigit)  charsetSize += 10;
+    if (hasSymbol) charsetSize += 32;
+    if (charsetSize === 0) charsetSize = 26;
+
+    const entropy = pw.length * Math.log2(charsetSize);
+    const combos = Math.pow(charsetSize, pw.length);
+    const crackSeconds = isFinite(combos) ? combos / (2 * 1e10) : Infinity;
+
+    const warnings = [];
+    const lower = pw.toLowerCase();
+    if (COMMON_PASSWORDS.includes(lower)) warnings.push('yaygın şifre listesinde bulundu');
+    if (/(.)\1{2,}/.test(pw)) warnings.push('tekrarlanan karakter tespit edildi (örn: aaa)');
+    if (/012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321/.test(pw)) warnings.push('sayı ardışıklığı tespit edildi');
+    if (/abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i.test(pw)) warnings.push('harf ardışıklığı tespit edildi');
+    for (const seq of KEYBOARD_ROWS) {
+      if (lower.includes(seq)) { warnings.push(`'${seq}' klavye dizisi tespit edildi`); break; }
+    }
+
+    let score = 0;
+    if (entropy >= 28) score = 1;
+    if (entropy >= 36) score = 2;
+    if (entropy >= 60) score = 3;
+    if (entropy >= 128) score = 4;
+    if (COMMON_PASSWORDS.includes(lower)) score = 0;
+    else if (warnings.length >= 2 && score > 0) score--;
+
+    const parts = [];
+    if (hasLower)  parts.push('küçük (26)');
+    if (hasUpper)  parts.push('büyük (26)');
+    if (hasDigit)  parts.push('sayı (10)');
+    if (hasSymbol) parts.push('sembol (~32)');
+    const charsetDesc = parts.join(' + ') + ` = ${charsetSize}`;
+
+    return { entropy, charsetDesc, crackSeconds, warnings, score, hasLower, hasUpper, hasDigit, hasSymbol };
+  }
+
+  function formatCrackTime(sec) {
+    if (!isFinite(sec) || sec >= 1e30) return 'evrenin ömründen uzun';
+    if (sec < 1e-7)    return 'anlık (< 1ns)';
+    if (sec < 0.001)   return `${(sec * 1e6).toFixed(0)} mikrosaniye`;
+    if (sec < 1)       return `${(sec * 1000).toFixed(0)} milisaniye`;
+    if (sec < 60)      return `${sec.toFixed(1)} saniye`;
+    if (sec < 3600)    return `${(sec / 60).toFixed(0)} dakika`;
+    if (sec < 86400)   return `${(sec / 3600).toFixed(0)} saat`;
+    if (sec < 31536000) return `${(sec / 86400).toFixed(0)} gün`;
+    if (sec < 3.154e10) return `${(sec / 31536000).toFixed(0)} yıl`;
+    return `${(sec / 3.154e9).toFixed(0)} yüzyıl`;
+  }
+
+  function generatePassword(length, useSymbols) {
+    const pool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+      + (useSymbols ? '!@#$%^&*()-_=+[]|;:,.<>?' : '');
+    const arr = new Uint32Array(length);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, n => pool[n % pool.length]).join('');
+  }
+  // --- end password tool helpers ---
+
   let tabCycle = null;
 
   termInput.addEventListener('keydown', (e) => {
@@ -222,7 +302,7 @@ const postsJson = JSON.stringify(posts.map(p => {
     const cmd = termInput.value.trim();
     termInput.value = '';
     historyIndex = -1;
-    if (cmd) { cmdHistory.push(cmd); if (cmdHistory.length > 100) cmdHistory.shift(); }
+    if (cmd && !/^pwcheck\s+\S/.test(cmd)) { cmdHistory.push(cmd); if (cmdHistory.length > 100) cmdHistory.shift(); }
 
     newGroup();
     addLine(`<span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<span class="term-cmd">${esc(cmd)}</span>`);
@@ -333,8 +413,18 @@ const postsJson = JSON.stringify(posts.map(p => {
         ['neofetch', 'system info'],
         ['clear', 'clear terminal output'],
       ];
+      const secCmds = [
+        ['pwcheck &lt;şifre&gt;', 'analyze password strength'],
+        ['pwgen', 'generate a 16-char password'],
+        ['pwgen -l &lt;n&gt; -n &lt;k&gt;', 'n chars, k passwords (max 10)'],
+        ['pwgen --no-symbols', 'no symbols'],
+      ];
       addLine(`<span class="term-dim">available commands:</span>`);
       cmds.forEach(([c, d]) => {
+        addLine(`&nbsp;&nbsp;<span class="term-cmd" style="display:inline-block;min-width:28ch">${c}</span><span class="term-desc">${d}</span>`);
+      });
+      addLine(`&nbsp;&nbsp;<span class="term-dim">── security tools ─────────────────────</span>`);
+      secCmds.forEach(([c, d]) => {
         addLine(`&nbsp;&nbsp;<span class="term-cmd" style="display:inline-block;min-width:28ch">${c}</span><span class="term-desc">${d}</span>`);
       });
       addLine(`<span class="term-dim">tip: Tab autocompletes post IDs &nbsp;↑↓ navigates history</span>`);
@@ -353,6 +443,71 @@ const postsJson = JSON.stringify(posts.map(p => {
 
     } else if (cmd === 'clear') {
       termOutput.innerHTML = '';
+
+    } else if (parts[0] === 'pwcheck') {
+      const pw = cmd.slice('pwcheck'.length).trim();
+      if (!pw) {
+        addLine(`<span class="term-dim">kullanım: pwcheck &lt;şifre&gt;</span>`);
+        addLine(`<span class="term-dim">örn:&nbsp;&nbsp;&nbsp;pwcheck MyP@ssw0rd123!</span>`);
+      } else {
+        const a = analyzePassword(pw);
+        const lbl = (s) => `<span style="display:inline-block;min-width:16ch;color:var(--fg-dim)">${s}</span>`;
+        addLine(`<span style="color:var(--cyan)">[INFO]</span> <span class="term-dim">Şifre yalnızca tarayıcınızda analiz edilir.</span>`);
+        addLine(`<span class="term-dim">────────────────────────────────</span>`);
+        addLine(lbl('Uzunluk') + `<span class="term-cmd">${pw.length} karakter</span>`);
+        addLine(lbl('Karakter seti') + esc(a.charsetDesc));
+        addLine(lbl('Entropy') + `${a.entropy.toFixed(1)} bit`);
+        addLine(lbl('Tahm. kırılma') + `~${esc(formatCrackTime(a.crackSeconds))} <span class="term-dim">(GPU brute-force)</span>`);
+        addLine(lbl('Güç') + `<span style="color:${PW_COLORS[a.score]}">${PW_BARS[a.score]}&nbsp;&nbsp;${PW_LABELS[a.score]}</span>`);
+        if (a.warnings.length) {
+          addLine(`<span class="term-dim">────────────────────────────────</span>`);
+          a.warnings.forEach(w => addLine(`<span style="color:#ff8c00">[WARN]</span> ${esc(w)}`));
+        }
+        const tips = [];
+        if (pw.length < 12) tips.push('En az 12 karakter kullanın (16+ önerilir)');
+        else if (pw.length < 16) tips.push('16+ karakter daha güvenli olur');
+        if (!a.hasUpper)  tips.push('Büyük harf ekleyin (A-Z)');
+        if (!a.hasDigit)  tips.push('Sayı ekleyin (0-9)');
+        if (!a.hasSymbol) tips.push('Sembol ekleyin (!@#$ vb.)');
+        if (a.score < 3) tips.push('&rarr; <span class="term-cmd">pwgen -l 20</span> ile güçlü şifre üretebilirsiniz');
+        if (tips.length) {
+          addLine(`<span class="term-dim">────────────────────────────────</span>`);
+          addLine(`<span class="term-dim">Öneriler:</span>`);
+          tips.forEach(t => addLine(`&nbsp;&nbsp;<span class="term-dim">+</span> ${t}`));
+        }
+      }
+
+    } else if (parts[0] === 'pwgen') {
+      let genLen = 16, genCount = 1, genSymbols = true, genErr = null;
+      for (let i = 1; i < parts.length; i++) {
+        if (parts[i] === '-l') {
+          const v = parseInt(parts[i + 1], 10);
+          if (!parts[i + 1] || isNaN(v) || v < 8 || v > 128) { genErr = 'pwgen: -l değeri 8-128 arasında olmalı'; break; }
+          genLen = v; i++;
+        } else if (parts[i] === '-n') {
+          const v = parseInt(parts[i + 1], 10);
+          if (!parts[i + 1] || isNaN(v) || v < 1 || v > 10) { genErr = 'pwgen: -n değeri 1-10 arasında olmalı'; break; }
+          genCount = v; i++;
+        } else if (parts[i] === '--no-symbols') {
+          genSymbols = false;
+        } else {
+          genErr = `pwgen: bilinmeyen seçenek: ${esc(parts[i])}`; break;
+        }
+      }
+      if (genErr) {
+        addLine(`<span class="term-err">${genErr}</span>`);
+      } else {
+        addLine(`<span style="color:var(--cyan)">[INFO]</span> <span class="term-dim">Şifreler yalnızca tarayıcınızda üretilir.</span>`);
+        addLine(`<span class="term-dim">────────────────────────────────</span>`);
+        for (let i = 0; i < genCount; i++) {
+          addLine(`&nbsp;&nbsp;<span class="term-cmd">${esc(generatePassword(genLen, genSymbols))}</span>`);
+        }
+        const poolSize = 62 + (genSymbols ? 24 : 0);
+        const entropy = genLen * Math.log2(poolSize);
+        const score = entropy < 28 ? 0 : entropy < 36 ? 1 : entropy < 60 ? 2 : entropy < 128 ? 3 : 4;
+        addLine(`<span class="term-dim">────────────────────────────────</span>`);
+        addLine(`<span class="term-dim">Entropy: ~${entropy.toFixed(0)} bit &nbsp;|&nbsp; Güç: <span style="color:${PW_COLORS[score]}">${PW_BARS[score]} ${PW_LABELS[score]}</span></span>`);
+      }
 
     } else {
       addLine(`<span class="term-err">bash: ${esc(parts[0])}: command not found — try 'help'</span>`);
