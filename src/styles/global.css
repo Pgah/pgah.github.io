@@ -10,6 +10,33 @@
   --cyan:      #00ccff;
   --font:      'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
   --width:     72ch;
+  --matrix-head: #fff8e0;
+}
+
+/* Alternate color themes — switched at runtime via the `theme` command
+   (sets data-theme on <html>). Default (gold) is the :root palette above. */
+:root[data-theme="matrix"] {
+  --bg:        #000500;
+  --bg-soft:   #001a00;
+  --fg:        #00cc33;
+  --fg-dim:    #009926;
+  --fg-bright: #33ff66;
+  --fg-muted:  #006618;
+  --green:     #33ff66;
+  --cyan:      #00ffcc;
+  --matrix-head: #d6ffd6;
+}
+
+:root[data-theme="amber"] {
+  --bg:        #0a0500;
+  --bg-soft:   #1a0f00;
+  --fg:        #ffb000;
+  --fg-dim:    #cc8800;
+  --fg-bright: #ffcc44;
+  --fg-muted:  #7a5200;
+  --green:     #7CFC00;
+  --cyan:      #ffd980;
+  --matrix-head: #fff0d0;
 }
 
 *, *::before, *::after {
@@ -110,6 +137,9 @@ hr {
 
 ::-webkit-scrollbar { width: 6px; background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--fg-muted); }
+
+/* `matrix off` hides the animated background (restored on load via data-matrix). */
+:root[data-matrix="off"] #matrix-canvas { display: none; }
 
 @media (max-width: 600px) {
   body {

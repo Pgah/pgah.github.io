@@ -14,7 +14,7 @@ const slug = Astro.url.pathname.replace('/posts/', '').replace(/\/$/, '').replac
 const dateStr = date.toISOString().split('T')[0];
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} ogType="article">
   <Prompt path="~/posts" command={`cat ${slug}.md`} />
 
   <div class="post-meta">

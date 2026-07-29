@@ -13,6 +13,34 @@ const chars = 'abcdefghijklmnopqrstuvwxyz0123456789/\\-_.@$#!|&><=+*%[]{}();:'.s
 const fontSize = 14;
 let drops: number[] = [];
 
+// Renkler aktif temanın CSS değişkenlerinden okunur; `theme` komutu
+// data-theme'i değiştirdiğinde MutationObserver ile canlı güncellenir.
+function cssVar(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  let h = (hex || '').replace('#', '').trim();
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  if (h.length !== 6) return null;
+  const n = parseInt(h, 16);
+  if (isNaN(n)) return null;
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+let colors = { fade: 'rgba(14, 9, 0, 0.05)', head: '#fff8e0', c1: '#f5e840', c2: '#e8d000', c3: '#a09000' };
+
+function readColors() {
+  const bg = hexToRgb(cssVar('--bg')) ?? { r: 14, g: 9, b: 0 };
+  colors = {
+    fade: `rgba(${bg.r}, ${bg.g}, ${bg.b}, 0.05)`,
+    head: cssVar('--matrix-head') || '#fff8e0',
+    c1: cssVar('--fg-bright') || '#f5e840',
+    c2: cssVar('--fg') || '#e8d000',
+    c3: cssVar('--fg-dim') || '#a09000',
+  };
+}
+
 function resize() {
   canvas.width  = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -20,11 +48,16 @@ function resize() {
   drops = Array.from({ length: colCount }, () => Math.random() * (canvas.height / fontSize));
 }
 
+readColors();
 resize();
 window.addEventListener('resize', resize);
+new MutationObserver(readColors).observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ['data-theme'],
+});
 
 function draw() {
-  ctx.fillStyle = 'rgba(14, 9, 0, 0.05)';
+  ctx.fillStyle = colors.fade;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.font = `${fontSize}px 'Courier New', monospace`;
@@ -34,19 +67,19 @@ function draw() {
     const x = i * fontSize;
     const y = drops[i] * fontSize;
 
-    // Baş karakter: beyazımsı
-    ctx.fillStyle = '#fff8e0';
+    // Baş karakter: temanın parlak ucu
+    ctx.fillStyle = colors.head;
     ctx.fillText(char, x, y);
 
-    // Bir önceki satır: parlak sarı
-    ctx.fillStyle = '#f5e840';
+    // Bir önceki satır: parlak tema rengi
+    ctx.fillStyle = colors.c1;
     ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize);
 
     // Geri kalanlar soluklaşıyor
-    ctx.fillStyle = '#e8d000';
+    ctx.fillStyle = colors.c2;
     ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize * 2);
 
-    ctx.fillStyle = '#a09000';
+    ctx.fillStyle = colors.c3;
     ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize * 3);
 
     if (y > canvas.height && Math.random() > 0.975) {

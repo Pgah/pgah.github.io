@@ -71,6 +71,8 @@ const postsJson = JSON.stringify(posts.map(p => {
 </BaseLayout>
 
 <script>
+  import { findCommand, commandNames, type CommandCtx } from '../lib/commands';
+
   const posts = JSON.parse(document.getElementById('posts-data').textContent);
   let sortKey = 'date';
   let sortDir = -1;
@@ -166,104 +168,36 @@ const postsJson = JSON.stringify(posts.map(p => {
     return `<span class="term-tag">[${esc(t)}]</span>`;
   }
 
-  function nfLabel(label) {
-    return `<span class="man-section" style="display:inline-block;width:8ch">${label}</span>`;
-  }
-
-  // --- password tool helpers ---
-  const COMMON_PASSWORDS = [
-    'password','123456','12345678','qwerty','abc123','monkey','1234567',
-    'letmein','trustno1','dragon','baseball','iloveyou','master','sunshine',
-    'ashley','bailey','passw0rd','shadow','123123','654321','superman',
-    'qazwsx','michael','football','batman','welcome','login','admin',
-    'hunter2','password1','access','hello','123456789','000000','111111',
-    'password123','test','user','pass','root','toor','changeme',
-    // Turkish names
-    'emre','ali','mehmet','mustafa','ahmet','fatma','ayse','zeynep',
-    'murat','hasan','huseyin','ibrahim','ismail','yusuf','omer','kemal',
-    'burak','serkan','tolga','volkan','berk','ege','arda','kaan','eren',
-    'selin','elif','buse','merve','esra','dilan','asli','pinar','deniz',
-    // International names
-    'john','jane','alex','david','james','robert','mike','chris','mark',
-    'lisa','anna','sara','emma','kate','julia','laura','sofia','maria',
-    // Name+number combos
-    'emre123','ali123','mehmet123','admin123','user123','test123',
-  ];
-  const KEYBOARD_ROWS = ['qwerty','qwertz','azerty','asdfgh','zxcvbn','qweasd'];
-  const PW_BARS   = ['■□□□□','■■□□□','■■■□□','■■■■□','■■■■■'];
-  const PW_LABELS = ['VERY WEAK','WEAK','MODERATE','STRONG','VERY STRONG'];
-  const PW_COLORS = ['#e05252','#ff8c00','var(--fg-dim)','var(--fg)','var(--green)'];
-
-  function analyzePassword(pw) {
-    const hasLower  = /[a-z]/.test(pw);
-    const hasUpper  = /[A-Z]/.test(pw);
-    const hasDigit  = /[0-9]/.test(pw);
-    const hasSymbol = /[^a-zA-Z0-9]/.test(pw);
-    let charsetSize = 0;
-    if (hasLower)  charsetSize += 26;
-    if (hasUpper)  charsetSize += 26;
-    if (hasDigit)  charsetSize += 10;
-    if (hasSymbol) charsetSize += 32;
-    if (charsetSize === 0) charsetSize = 26;
-
-    const entropy = pw.length * Math.log2(charsetSize);
-    const combos = Math.pow(charsetSize, pw.length);
-    const crackSeconds = isFinite(combos) ? combos / (2 * 1e10) : Infinity;
-
-    const warnings = [];
-    const lower = pw.toLowerCase();
-    if (COMMON_PASSWORDS.includes(lower)) warnings.push('found in common passwords list');
-    if (/(.)\1{2,}/.test(pw)) warnings.push('repeated characters detected (e.g. aaa)');
-    if (/012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321/.test(pw)) warnings.push('sequential digits detected');
-    if (/abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i.test(pw)) warnings.push('sequential letters detected');
-    for (const seq of KEYBOARD_ROWS) {
-      if (lower.includes(seq)) { warnings.push(`'${seq}' keyboard pattern detected`); break; }
-    }
-
-    let score = 0;
-    if (entropy >= 28) score = 1;
-    if (entropy >= 36) score = 2;
-    if (entropy >= 60) score = 3;
-    if (entropy >= 128) score = 4;
-    if (pw.length < 8 && score > 1) score = 1;
-    if (COMMON_PASSWORDS.includes(lower)) score = 0;
-    else if (warnings.length >= 1 && score > 0) score--;
-
-    const parts = [];
-    if (hasLower)  parts.push('lower (26)');
-    if (hasUpper)  parts.push('upper (26)');
-    if (hasDigit)  parts.push('digits (10)');
-    if (hasSymbol) parts.push('symbols (~32)');
-    const charsetDesc = parts.join(' + ') + ` = ${charsetSize}`;
-
-    return { entropy, charsetDesc, crackSeconds, warnings, score, hasLower, hasUpper, hasDigit, hasSymbol };
-  }
-
-  function formatCrackTime(sec) {
-    if (!isFinite(sec) || sec >= 1e30) return 'longer than the age of the universe';
-    if (sec < 1e-7)    return 'instant (< 1ns)';
-    if (sec < 0.001)   return `${(sec * 1e6).toFixed(0)} microseconds`;
-    if (sec < 1)       return `${(sec * 1000).toFixed(0)} milliseconds`;
-    if (sec < 60)      return `${sec.toFixed(1)} seconds`;
-    if (sec < 3600)    return `${(sec / 60).toFixed(0)} minutes`;
-    if (sec < 86400)   return `${(sec / 3600).toFixed(0)} hours`;
-    if (sec < 31536000) return `${(sec / 86400).toFixed(0)} days`;
-    if (sec < 3.154e10) return `${(sec / 31536000).toFixed(0)} years`;
-    return `${(sec / 3.154e9).toFixed(0)} centuries`;
-  }
-
-  function generatePassword(length, useSymbols) {
-    const pool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-      + (useSymbols ? '!@#$%^&*()-_=+[]|;:,.<>?' : '');
-    const arr = new Uint32Array(length);
-    crypto.getRandomValues(arr);
-    return Array.from(arr, n => pool[n % pool.length]).join('');
-  }
-  // --- end password tool helpers ---
+  const ctx = {
+    posts,
+    history: cmdHistory,
+    addLine,
+    navigate: (url) => { window.location.href = url; },
+    clearOutput: () => { termOutput.innerHTML = ''; },
+    setActiveTag,
+    getActiveTag: () => activeTag,
+    esc,
+    tagSpan,
+  } satisfies CommandCtx;
 
   let tabCycle = null;
 
-  termInput.addEventListener('keydown', (e) => {
+  function completeFrom(partial, candidates, prefix) {
+    const matches = candidates.filter(x => x.toLowerCase().startsWith(partial.toLowerCase()));
+    if (!matches.length) return;
+    if (!tabCycle) {
+      if (matches.length === 1) { termInput.value = prefix + matches[0]; return; }
+      let common = matches[0];
+      for (const x of matches) while (!x.startsWith(common)) common = common.slice(0, -1);
+      if (common !== partial) { termInput.value = prefix + common; tabCycle = { matches, index: -1, prefix }; }
+      else { tabCycle = { matches, index: 0, prefix }; termInput.value = prefix + matches[0]; }
+    } else {
+      tabCycle.index = (tabCycle.index + 1) % tabCycle.matches.length;
+      termInput.value = tabCycle.prefix + tabCycle.matches[tabCycle.index];
+    }
+  }
+
+  termInput.addEventListener('keydown', async (e) => {
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       tabCycle = null;
@@ -289,20 +223,10 @@ const postsJson = JSON.stringify(posts.map(p => {
       e.preventDefault();
       const val = termInput.value;
       const m = val.match(/^(cd\s+|cat\s+|man\s+)(.*)$/);
-      if (!m) return;
-      const [, prefix, partial] = m;
-      const matches = posts.filter(p => p.id.toLowerCase().startsWith(partial.toLowerCase()));
-      if (!matches.length) return;
-      if (!tabCycle) {
-        if (matches.length === 1) { termInput.value = prefix + matches[0].id; return; }
-        let common = matches[0].id;
-        for (const p of matches) while (!p.id.startsWith(common)) common = common.slice(0, -1);
-        if (common !== partial) { termInput.value = prefix + common; tabCycle = { matches, index: -1 }; }
-        else { tabCycle = { matches, index: 0 }; termInput.value = prefix + matches[0].id; }
-      } else {
-        tabCycle.index = (tabCycle.index + 1) % tabCycle.matches.length;
-        const pfx = termInput.value.match(/^(cd\s+|cat\s+|man\s+)/);
-        if (pfx) termInput.value = pfx[1] + tabCycle.matches[tabCycle.index].id;
+      if (m) {
+        completeFrom(m[2], posts.map(p => p.id), m[1]);
+      } else if (!/\s/.test(val)) {
+        completeFrom(val, commandNames, '');
       }
       return;
     }
@@ -310,248 +234,36 @@ const postsJson = JSON.stringify(posts.map(p => {
     tabCycle = null;
     if (e.key !== 'Enter') return;
 
-    const cmd = termInput.value.trim();
+    const cmdStr = termInput.value.trim();
     termInput.value = '';
     historyIndex = -1;
-    if (cmd && !/^pwcheck\s+\S/.test(cmd)) { cmdHistory.push(cmd); if (cmdHistory.length > 100) cmdHistory.shift(); }
 
     newGroup();
-    addLine(`<span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<span class="term-cmd">${esc(cmd)}</span>`);
-    if (!cmd) return;
+    addLine(`<span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<span class="term-cmd">${esc(cmdStr)}</span>`);
+    if (!cmdStr) return;
 
-    const parts = cmd.split(/\s+/);
+    const parts = cmdStr.split(/\s+/);
+    const name = parts[0];
+    const args = parts.slice(1);
+    const argStr = cmdStr.slice(name.length).trim();
+    const command = findCommand(name);
 
-    if (parts[0] === 'cd' && parts[1]) {
-      const target = parts[1];
-      if (target === '..') { window.location.href = '/'; return; }
-      const post = posts.find(p => p.id === target);
-      if (post) window.location.href = `/posts/${post.id}`;
-      else addLine(`<span class="term-err">bash: cd: ${esc(target)}: No such file or directory</span>`);
+    // Record history, but keep secret invocations (e.g. `pwcheck <pw>`) out of it.
+    if (!(command && command.secret && argStr)) {
+      cmdHistory.push(cmdStr);
+      if (cmdHistory.length > 100) cmdHistory.shift();
+    }
 
-    } else if (parts[0] === 'cat' && parts[1]) {
-      const target = parts[1].replace(/\.md$/, '');
-      const post = posts.find(p => p.id === target);
-      if (post) window.location.href = `/posts/${post.id}`;
-      else addLine(`<span class="term-err">cat: ${esc(parts[1])}: No such file or directory</span>`);
+    if (!command) {
+      addLine(`<span class="term-err">bash: ${esc(name)}: command not found — try 'help'</span>`);
+      return;
+    }
 
-    } else if (parts[0] === 'ls') {
-      const tagFlagIdx = parts.findIndex(p => p === '--tag');
-      if (tagFlagIdx !== -1) {
-        const tag = parts[tagFlagIdx + 1];
-        if (!tag) {
-          setActiveTag(null);
-          addLine(`<span class="term-dim">tag filter cleared</span>`);
-        } else {
-          const newTag = activeTag === tag ? null : tag;
-          setActiveTag(newTag);
-          if (!newTag) {
-            addLine(`<span class="term-dim">tag filter cleared</span>`);
-          } else {
-            const filtered = posts.filter(p => p.tags.includes(tag));
-            if (!filtered.length) {
-              addLine(`<span class="term-err">ls: no posts tagged "${esc(tag)}"</span>`);
-            } else {
-              addLine(`<span class="term-dim">tag: ${tagSpan(tag)} — ${filtered.length} post${filtered.length !== 1 ? 's' : ''}:</span>`);
-              filtered.forEach(p => addLine(`<span class="perm">-rw-r--r--</span>&nbsp;&nbsp;<span class="date">${p.dateStr}</span>&nbsp;&nbsp;<a class="term-link" href="/posts/${p.id}">${esc(p.title)}</a>`));
-            }
-          }
-        }
-      } else if (cmd === 'ls -la' || cmd === 'ls -la ~/blogs' || cmd === 'ls -l') {
-        posts.forEach(p => addLine(`<span class="perm">-rw-r--r--</span>&nbsp;&nbsp;<span class="date">${p.dateStr}</span>&nbsp;&nbsp;<span class="term-cmd">${p.id}</span>`));
-      } else {
-        posts.forEach(p => addLine(`<span class="term-cmd">${p.id}</span>`));
-      }
-
-    } else if (parts[0] === 'grep' && parts.length > 1) {
-      const pattern = parts.slice(1).join(' ').replace(/^["']|["']$/g, '').toLowerCase();
-      const matches = posts.filter(p =>
-        p.title.toLowerCase().includes(pattern) ||
-        p.description.toLowerCase().includes(pattern) ||
-        p.tags.some(t => t.toLowerCase().includes(pattern))
-      );
-      if (!matches.length) {
-        addLine(`<span class="term-err">grep: no matches for "${esc(parts.slice(1).join(' '))}"</span>`);
-      } else {
-        addLine(`<span class="term-dim">${matches.length} match${matches.length !== 1 ? 'es' : ''}:</span>`);
-        matches.forEach(p => {
-          const tagsHtml = p.tags.map(tagSpan).join(' ');
-          const desc = p.description.length > 85 ? p.description.slice(0, 85) + '…' : p.description;
-          addLine(`<a class="term-link" href="/posts/${p.id}">${esc(p.title)}</a>&nbsp;${tagsHtml}`);
-          addLine(`<span class="term-desc">&nbsp;&nbsp;${esc(desc)}</span>`);
-        });
-      }
-
-    } else if (parts[0] === 'man' && parts.length > 1) {
-      const target = parts[1];
-      if (target === 'about') { window.location.href = '/about'; return; }
-      const exact = posts.find(p => p.id === target);
-      const partialMatches = posts.filter(p => p.id.includes(target));
-      const post = exact || (partialMatches.length === 1 ? partialMatches[0] : null);
-      if (!post && partialMatches.length > 1) {
-        addLine(`<span class="term-err">man: ambiguous — did you mean: ${partialMatches.map(p => p.id).join(', ')}?</span>`);
-      } else if (post) {
-        addLine(`<span class="man-name">${esc(post.title)}</span>`);
-        addLine(`<span class="term-dim">────────────────────────────────</span>`);
-        addLine(`<span class="man-section">DESCRIPTION</span>`);
-        addLine(`&nbsp;&nbsp;&nbsp;&nbsp;${esc(post.description)}`);
-        if (post.tags.length) {
-          addLine(`<span class="man-section">TAGS</span>`);
-          addLine(`&nbsp;&nbsp;&nbsp;&nbsp;${post.tags.map(tagSpan).join(' ')}`);
-        }
-        addLine(`<span class="man-section">DATE</span>`);
-        addLine(`&nbsp;&nbsp;&nbsp;&nbsp;${post.dateStr}`);
-        addLine(`<span class="term-dim">&nbsp;&nbsp;→ <a class="term-link" href="/posts/${post.id}">cd ${esc(post.id)}</a></span>`);
-      } else {
-        addLine(`<span class="term-err">man: no entry for "${esc(target)}" — try: grep ${esc(target)}</span>`);
-      }
-
-    } else if (cmd === 'whoami') {
-      addLine(`sleeper`);
-      addLine(`<span class="term-dim">→ <a class="term-link" href="/about">man about</a></span>`);
-
-    } else if (cmd === 'help') {
-      const cmds = [
-        ['ls', 'list all posts'],
-        ['ls -la', 'list with details'],
-        ['ls --tag &lt;tag&gt;', 'filter listing by tag'],
-        ['ls --tag', 'clear tag filter'],
-        ['cd &lt;post-id&gt;', 'open a post'],
-        ['cat &lt;post-id&gt;', 'open a post (alias)'],
-        ['grep &lt;term&gt;', 'search titles, descriptions, tags'],
-        ['man &lt;post-id&gt;', 'show post info'],
-        ['man about', 'view about page'],
-        ['whoami', 'current user'],
-        ['neofetch', 'system info'],
-        ['clear', 'clear terminal output'],
-        ['tour', 'interactive feature overview'],
-      ];
-      const secCmds = [
-        ['pwcheck &lt;password&gt;', 'analyze password strength'],
-        ['pwgen', 'generate a 16-char password'],
-        ['pwgen -l &lt;n&gt; -n &lt;k&gt;', 'n chars, k passwords (max 10)'],
-        ['pwgen --no-symbols', 'no symbols'],
-      ];
-      addLine(`<span class="term-dim">available commands:</span>`);
-      cmds.forEach(([c, d]) => {
-        addLine(`&nbsp;&nbsp;<span class="term-cmd" style="display:inline-block;min-width:28ch">${c}</span><span class="term-desc">${d}</span>`);
-      });
-      addLine(`&nbsp;&nbsp;<span class="term-dim">── security tools ─────────────────────</span>`);
-      secCmds.forEach(([c, d]) => {
-        addLine(`&nbsp;&nbsp;<span class="term-cmd" style="display:inline-block;min-width:28ch">${c}</span><span class="term-desc">${d}</span>`);
-      });
-      addLine(`<span class="term-dim">tip: Tab autocompletes post IDs &nbsp;↑↓ navigates history</span>`);
-
-    } else if (cmd === 'neofetch') {
-      const uniqueTags = [...new Set(posts.flatMap(p => p.tags))];
-      const latest = posts[0];
-      addLine(`<span class="term-cmd">sleeper</span><span class="term-dim">@</span><span class="term-cmd">matrix-303.pages.dev</span>`);
-      addLine(`<span class="term-dim">────────────────────────────</span>`);
-      addLine(`${nfLabel('Posts')}${posts.length}`);
-      addLine(`${nfLabel('Tags')}${uniqueTags.map(tagSpan).join(' ')}`);
-      addLine(`${nfLabel('Latest')}<a class="term-link" href="/posts/${latest.id}">${esc(latest.title)}</a> <span class="term-dim">(${latest.dateStr})</span>`);
-      addLine(`${nfLabel('Shell')}bash (matrix terminal v2)`);
-      addLine(`${nfLabel('Theme')}One Dark Pro`);
-      addLine(`${nfLabel('Site')}<a class="term-link" href="/">matrix-303.pages.dev</a>`);
-
-    } else if (cmd === 'clear') {
-      termOutput.innerHTML = '';
-
-    } else if (cmd === 'tour') {
-      const tl = (s) => `<span style="display:inline-block;min-width:18ch;color:var(--cyan)">${s}</span>`;
-      addLine(`<span class="term-dim">╔══════════════════════════════════════╗</span>`);
-      addLine(`<span class="term-dim">║</span>           site features              <span class="term-dim">║</span>`);
-      addLine(`<span class="term-dim">╚══════════════════════════════════════╝</span>`);
-      addLine('');
-      addLine(`&nbsp;&nbsp;<span style="color:var(--green)">📂 navigation</span>`);
-      addLine(`&nbsp;&nbsp;<span class="term-dim">──────────────────────────────────────</span>`);
-      addLine(`&nbsp;&nbsp;${tl('ls')}list all posts`);
-      addLine(`&nbsp;&nbsp;${tl('ls -la')}list with details`);
-      addLine(`&nbsp;&nbsp;${tl('ls --tag &lt;tag&gt;')}filter by tag`);
-      addLine(`&nbsp;&nbsp;${tl('cd &lt;id&gt;')}open a post`);
-      addLine(`&nbsp;&nbsp;${tl('grep &lt;term&gt;')}search titles, descriptions, tags`);
-      addLine(`&nbsp;&nbsp;${tl('man &lt;id&gt;')}show post info`);
-      addLine('');
-      addLine(`&nbsp;&nbsp;<span style="color:var(--green)">🔒 security tools</span>`);
-      addLine(`&nbsp;&nbsp;<span class="term-dim">──────────────────────────────────────</span>`);
-      addLine(`&nbsp;&nbsp;${tl('pwcheck &lt;pw&gt;')}analyze password strength`);
-      addLine(`&nbsp;&nbsp;${tl('pwgen')}generate a 16-char password`);
-      addLine(`&nbsp;&nbsp;${tl('pwgen -l &lt;n&gt;')}custom length (8–128)`);
-      addLine(`&nbsp;&nbsp;${tl('pwgen -n &lt;k&gt;')}generate k passwords (max 10)`);
-      addLine('');
-      addLine(`&nbsp;&nbsp;<span style="color:var(--green)">⌨️  shortcuts</span>`);
-      addLine(`&nbsp;&nbsp;<span class="term-dim">──────────────────────────────────────</span>`);
-      addLine(`&nbsp;&nbsp;<span class="term-dim" style="display:inline-block;min-width:18ch">Tab</span>autocomplete post IDs`);
-      addLine(`&nbsp;&nbsp;<span class="term-dim" style="display:inline-block;min-width:18ch">↑ / ↓</span>navigate command history`);
-      addLine('');
-      addLine(`&nbsp;&nbsp;<span class="term-dim">type 'help' for the full command reference</span>`);
-
-    } else if (parts[0] === 'pwcheck') {
-      const pw = cmd.slice('pwcheck'.length).trim();
-      if (!pw) {
-        addLine(`<span class="term-dim">usage: pwcheck &lt;password&gt;</span>`);
-        addLine(`<span class="term-dim">e.g.:&nbsp;&nbsp;pwcheck MyP@ssw0rd123!</span>`);
-      } else {
-        const a = analyzePassword(pw);
-        const lbl = (s) => `<span style="display:inline-block;min-width:16ch;color:var(--fg-dim)">${s}</span>`;
-        addLine(`<span style="color:var(--cyan)">[INFO]</span> <span class="term-dim">Password is analyzed locally in your browser.</span>`);
-        addLine(`<span class="term-dim">────────────────────────────────</span>`);
-        addLine(lbl('Length') + `<span class="term-cmd">${pw.length} chars</span>`);
-        addLine(lbl('Charset') + esc(a.charsetDesc));
-        addLine(lbl('Entropy') + `${a.entropy.toFixed(1)} bit`);
-        addLine(lbl('Est. crack time') + `~${esc(formatCrackTime(a.crackSeconds))} <span class="term-dim">(GPU brute-force)</span>`);
-        addLine(lbl('Strength') + `<span style="color:${PW_COLORS[a.score]}">${PW_BARS[a.score]}&nbsp;&nbsp;${PW_LABELS[a.score]}</span>`);
-        if (a.warnings.length) {
-          addLine(`<span class="term-dim">────────────────────────────────</span>`);
-          a.warnings.forEach(w => addLine(`<span style="color:#ff8c00">[WARN]</span> ${esc(w)}`));
-        }
-        const tips = [];
-        if (pw.length < 12) tips.push('Use at least 12 characters (16+ recommended)');
-        else if (pw.length < 16) tips.push('16+ characters would be stronger');
-        if (!a.hasUpper)  tips.push('Add uppercase letters (A-Z)');
-        if (!a.hasDigit)  tips.push('Add digits (0-9)');
-        if (!a.hasSymbol) tips.push('Add symbols (!@#$ etc.)');
-        if (a.score < 3) tips.push('&rarr; generate a strong one with <span class="term-cmd">pwgen -l 20</span>');
-        if (tips.length) {
-          addLine(`<span class="term-dim">────────────────────────────────</span>`);
-          addLine(`<span class="term-dim">Suggestions:</span>`);
-          tips.forEach(t => addLine(`&nbsp;&nbsp;<span class="term-dim">+</span> ${t}`));
-        }
-      }
-
-    } else if (parts[0] === 'pwgen') {
-      let genLen = 16, genCount = 1, genSymbols = true, genErr = null;
-      for (let i = 1; i < parts.length; i++) {
-        if (parts[i] === '-l') {
-          const v = parseInt(parts[i + 1], 10);
-          if (!parts[i + 1] || isNaN(v) || v < 8 || v > 128) { genErr = 'pwgen: -l value must be between 8-128'; break; }
-          genLen = v; i++;
-        } else if (parts[i] === '-n') {
-          const v = parseInt(parts[i + 1], 10);
-          if (!parts[i + 1] || isNaN(v) || v < 1 || v > 10) { genErr = 'pwgen: -n value must be between 1-10'; break; }
-          genCount = v; i++;
-        } else if (parts[i] === '--no-symbols') {
-          genSymbols = false;
-        } else {
-          genErr = `pwgen: unknown option: ${esc(parts[i])}`; break;
-        }
-      }
-      if (genErr) {
-        addLine(`<span class="term-err">${genErr}</span>`);
-      } else {
-        addLine(`<span style="color:var(--cyan)">[INFO]</span> <span class="term-dim">Passwords are generated locally in your browser.</span>`);
-        addLine(`<span class="term-dim">────────────────────────────────</span>`);
-        for (let i = 0; i < genCount; i++) {
-          addLine(`&nbsp;&nbsp;<span class="term-cmd">${esc(generatePassword(genLen, genSymbols))}</span>`);
-        }
-        const poolSize = 62 + (genSymbols ? 24 : 0);
-        const entropy = genLen * Math.log2(poolSize);
-        const score = entropy < 28 ? 0 : entropy < 36 ? 1 : entropy < 60 ? 2 : entropy < 128 ? 3 : 4;
-        addLine(`<span class="term-dim">────────────────────────────────</span>`);
-        addLine(`<span class="term-dim">Entropy: ~${entropy.toFixed(0)} bit &nbsp;|&nbsp; Strength: <span style="color:${PW_COLORS[score]}">${PW_BARS[score]} ${PW_LABELS[score]}</span></span>`);
-      }
-
-    } else {
-      addLine(`<span class="term-err">bash: ${esc(parts[0])}: command not found — try 'help'</span>`);
+    try {
+      await command.run(ctx, args, argStr);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      addLine(`<span class="term-err">${esc(name)}: ${esc(msg)}</span>`);
     }
   });
 </script>
