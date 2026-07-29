@@ -443,17 +443,26 @@ export const commands: Command[] = [
   },
   {
     name: 'ports', category: 'network',
-    usage: 'ports &lt;number|service&gt;', summary: 'look up common ports',
+    usage: 'ports &lt;number|range|service&gt;', summary: 'look up common ports (e.g. 443, 1-1024, ssh)',
     run(ctx, args) {
-      if (!args[0]) { ctx.addLine('<span class="term-dim">usage: ports &lt;number|service&gt;  e.g. ports 443</span>'); return; }
+      if (!args[0]) { ctx.addLine('<span class="term-dim">usage: ports &lt;number|range|service&gt;  e.g. ports 443, ports 1-1024, ports ssh</span>'); return; }
       const query = args.join(' ');
       const results = lookupPort(query);
       if (!results.length) { ctx.addLine(`<span class="term-err">ports: no match for "${ctx.esc(query)}"</span>`); return; }
-      results.forEach(p => ctx.addLine(
-        `<span class="term-cmd" style="display:inline-block;min-width:7ch">${p.port}</span>` +
-        `<span style="display:inline-block;min-width:9ch;color:var(--fg-dim)">${ctx.esc(p.proto)}</span>` +
-        `<span style="display:inline-block;min-width:11ch">${ctx.esc(p.service)}</span>` +
-        `<span class="term-desc">${ctx.esc(p.desc)}</span>`));
+      const shown = results.slice(0, 40);
+      shown.forEach(p => {
+        ctx.addLine(
+          `<span class="term-cmd" style="display:inline-block;min-width:7ch">${p.port}</span>` +
+          `<span style="display:inline-block;min-width:9ch;color:var(--fg-dim)">${ctx.esc(p.proto)}</span>` +
+          `<span style="display:inline-block;min-width:11ch">${ctx.esc(p.service)}</span>` +
+          `<span class="term-desc">${ctx.esc(p.desc)}</span>`);
+        if (p.risk) {
+          ctx.addLine(`<span style="display:inline-block;min-width:27ch"></span>${WARN} <span class="term-desc">${ctx.esc(p.risk)}</span>`);
+        }
+      });
+      if (results.length > shown.length) {
+        ctx.addLine(`<span class="term-dim">… and ${results.length - shown.length} more — narrow the range</span>`);
+      }
     },
   },
 

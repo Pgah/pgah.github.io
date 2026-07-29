@@ -55,4 +55,21 @@ describe('lookupPort', () => {
   it('returns empty for unknown', () => {
     expect(lookupPort('99999')).toHaveLength(0);
   });
+  it('supports ranges, sorted ascending and within bounds', () => {
+    const r = lookupPort('20-25');
+    expect(r.map(p => p.port)).toEqual([20, 21, 22, 23, 25]);
+  });
+  it('normalizes reversed ranges', () => {
+    expect(lookupPort('25-20').map(p => p.port)).toEqual([20, 21, 22, 23, 25]);
+  });
+  it('carries risk notes on insecure ports', () => {
+    expect(lookupPort('23')[0].risk).toMatch(/SSH/);
+    expect(lookupPort('3389')[0].risk).toBeTruthy();
+    expect(lookupPort('443')[0].risk).toBeUndefined();
+  });
+  it('includes the expanded port set', () => {
+    for (const n of [88, 3389, 5900, 2375, 25565]) {
+      expect(lookupPort(String(n))).toHaveLength(1);
+    }
+  });
 });
