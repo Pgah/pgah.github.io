@@ -73,8 +73,6 @@ A handful of zombies is normal and harmless — a child exits and a moment passe
 
 The fix is a parent that calls `wait()` correctly. If the parent itself dies, its zombie children are re-parented to PID 1, which will collect them. The only scenario where zombies become a serious problem is a long-running parent with a bug.
 
-## A Foundation for Identity
-
 Processes do not run in a vacuum. Every process runs under an **identity** — a user account whose permissions it inherits. That identity determines which files the process can open, which signals it is allowed to send to other processes, and what resources are available to it. The kernel enforces these identity-based limits at every system call boundary, the same boundary described in the architecture article as the line between user space and kernel space.
 
 Understanding how processes work is the necessary foundation for understanding what happens when a process is asked to do something it has no right to do. The next piece of that picture is the system of users and groups that defines those rights — who can do what, to what, and why the kernel allows it.
