@@ -277,18 +277,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .cell-absent  { border-color: #2a2500;          color: var(--fg-muted); background: #2a2500; }
 
   /* Keyboard */
-  .wl-keyboard { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .wl-keyboard { display: flex; flex-direction: column; gap: 0.3rem; width: 100%; }
   .kb-row      { display: flex; gap: 0.3rem; }
 
   .kb-key {
-    height: 2.6rem;
-    min-width: 2rem;
-    padding: 0 0.25rem;
+    flex: 1;
+    height: 2.8rem;
+    padding: 0;
     border: 2px solid var(--fg-dim);
     background: #1c1a00;
     color: var(--fg-bright);
     font-family: var(--font);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: bold;
     cursor: pointer;
     border-radius: 0;
@@ -328,6 +328,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       gap: 0.3rem;
     }
     .cell { font-size: 1.2rem; }
-    .kb-key { height: 2.4rem; min-width: 1.75rem; font-size: 0.7rem; }
+    .kb-key { height: 2.4rem; font-size: 0.75rem; }
   }
 </style>
