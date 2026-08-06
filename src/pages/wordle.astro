@@ -248,7 +248,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    padding-top: 0.5rem;
+    padding: 1.5rem 2rem 2rem;
+    background: var(--bg);
+    position: relative;
   }
 
   /* ── Header ────────────────────────────────────────────────────────────── */
@@ -294,12 +296,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     user-select: none;
   }
 
-  .tile-empty   { background: #1e1c00; border-color: var(--fg-dim); color: transparent; }
-  .tile-input   { background: #1e1c00; border-color: var(--fg-bright); color: var(--fg-bright); }
+  .tile-empty   { background: var(--bg-soft); border-color: var(--fg-muted); color: transparent; }
+  .tile-input   { background: var(--bg-soft); border-color: var(--fg-bright); color: var(--fg-bright); }
   .tile-correct { background: var(--green);      border-color: var(--green);      color: var(--bg); }
   .tile-present { background: var(--fg-bright);  border-color: var(--fg-bright);  color: var(--bg); }
   .tile-absent  { background: #252200;           border-color: #3a3600;           color: var(--fg-muted); }
-  .tile-answer  { background: #252200; border-color: var(--fg-dim); color: var(--fg-bright); }
+  .tile-answer  { background: var(--bg-soft); border-color: var(--fg-dim); color: var(--fg-bright); }
 
   /* ── Actions ───────────────────────────────────────────────────────────── */
   .wl-actions { min-height: 2rem; display: flex; align-items: center; }
