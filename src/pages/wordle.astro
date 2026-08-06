@@ -1,27 +1,24 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Prompt from '../components/Prompt.astro';
 ---
 
 <BaseLayout title="wordle" description="Daily security word puzzle — a new 5-letter cyber term every day">
-  <Prompt command="play wordle" />
 
-  <div id="wl-header"></div>
-  <div id="wl-board"></div>
-  <div id="wl-msg"></div>
-  <div id="wl-kb"></div>
+  <div class="wl-page">
+    <header class="wl-header">
+      <h1 class="wl-title">Security Wordle</h1>
+      <div id="wl-meta" class="wl-meta"></div>
+    </header>
 
-  <div id="wl-input-row" class="wl-input-row">
-    <span class="prompt-dim">sleeper@wordle:~$</span>&nbsp;<input
-      id="wl-inp"
-      type="text"
-      maxlength="5"
-      autocomplete="off"
-      spellcheck="false"
-    />
+    <div id="wl-msg" class="wl-msg"></div>
+
+    <div class="wl-grid" id="wl-grid"></div>
+
+    <div class="wl-keyboard" id="wl-keyboard"></div>
+
+    <div id="wl-actions" class="wl-actions"></div>
   </div>
 
-  <div id="wl-actions"></div>
 </BaseLayout>
 
 <script>
@@ -30,85 +27,138 @@ import Prompt from '../components/Prompt.astro';
     isValidGuess, buildShareText, todayStr,
   } from '../lib/wordle';
 
-  const state = loadState();
+  const state  = loadState();
   const target = getDailyWord();
-  const day = dayIndex();
+  const day    = dayIndex();
 
-  const headerEl  = document.getElementById('wl-header')!;
-  const boardEl   = document.getElementById('wl-board')!;
+  let currentGuess = '';
+  let msgTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const metaEl    = document.getElementById('wl-meta')!;
   const msgEl     = document.getElementById('wl-msg')!;
-  const kbEl      = document.getElementById('wl-kb')!;
-  const inputRow  = document.getElementById('wl-input-row')!;
+  const gridEl    = document.getElementById('wl-grid')!;
+  const kbEl      = document.getElementById('wl-keyboard')!;
   const actionsEl = document.getElementById('wl-actions')!;
-  const inp       = document.getElementById('wl-inp') as HTMLInputElement;
 
-  type KeyStatus = 'correct' | 'present' | 'absent';
-
-  function getKeyState(): Record<string, KeyStatus> {
-    const ks: Record<string, KeyStatus> = {};
-    for (let g = 0; g < state.guesses.length; g++) {
-      const guess  = state.guesses[g];
-      const result = state.results[g];
-      for (let i = 0; i < 5; i++) {
-        const ch = guess[i];
-        const r  = result[i] as KeyStatus;
-        if (!ks[ch] || r === 'correct' || (r === 'present' && ks[ch] === 'absent')) {
-          ks[ch] = r;
-        }
-      }
+  // ── Grid init (30 static cells) ───────────────────────────────────────────
+  for (let r = 0; r < 6; r++) {
+    for (let c = 0; c < 5; c++) {
+      const cell = document.createElement('div');
+      cell.id = `c${r}${c}`;
+      gridEl.appendChild(cell);
     }
-    return ks;
   }
 
-  function renderHeader() {
-    headerEl.innerHTML =
-      `<span class="wl-day">Security Wordle #${day}</span>` +
-      ` <span class="wl-dim">— ${state.date}</span>`;
-  }
+  // ── Keyboard init ─────────────────────────────────────────────────────────
+  const KB_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', '↵ZXCVBNM⌫'];
 
-  function renderBoard() {
-    boardEl.innerHTML = '';
-    for (let i = 0; i < 6; i++) {
+  function buildKeyboard() {
+    kbEl.innerHTML = '';
+    for (const letters of KB_ROWS) {
       const row = document.createElement('div');
-      row.className = 'wl-row';
-      for (let j = 0; j < 5; j++) {
-        const cell = document.createElement('span');
-        if (i < state.guesses.length) {
-          cell.className = `wl-cell wl-${state.results[i][j]}`;
-          cell.textContent = state.guesses[i][j];
-        } else {
-          cell.className = 'wl-cell wl-empty';
-          cell.textContent = '·';
-        }
-        row.appendChild(cell);
+      row.className = 'kb-row';
+      for (const ch of letters) {
+        const btn = document.createElement('button');
+        btn.className = ch === '↵' || ch === '⌫' ? 'kb-key kb-wide' : 'kb-key';
+        btn.textContent = ch;
+        btn.dataset.key = ch;
+        btn.addEventListener('click', () => handleKey(ch));
+        row.appendChild(btn);
       }
-      boardEl.appendChild(row);
+      kbEl.appendChild(row);
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  function renderMeta() {
+    const streak = state.streak > 0 ? ` · streak&nbsp;${state.streak}&nbsp;🔥` : '';
+    metaEl.innerHTML = `#${day} &nbsp;·&nbsp; ${state.date}${streak}`;
+  }
+
+  function renderGrid() {
+    const activeRow = state.guesses.length;
+    for (let r = 0; r < 6; r++) {
+      for (let c = 0; c < 5; c++) {
+        const cell = document.getElementById(`c${r}${c}`)!;
+        if (r < state.guesses.length) {
+          cell.textContent = state.guesses[r][c];
+          cell.className   = `cell cell-${state.results[r][c]}`;
+        } else if (r === activeRow && !state.solved && !state.failed) {
+          cell.textContent = currentGuess[c] ?? '';
+          cell.className   = currentGuess[c] ? 'cell cell-input' : 'cell cell-empty';
+        } else {
+          cell.textContent = '';
+          cell.className   = 'cell cell-empty';
+        }
+      }
     }
   }
 
   function renderKeyboard() {
-    const ks = getKeyState();
-    kbEl.innerHTML = '';
-    ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'].forEach((letters, ri) => {
-      const rowEl = document.createElement('div');
-      rowEl.className = `kb-row kb-r${ri}`;
-      for (const ch of letters) {
-        const key = document.createElement('span');
-        key.className = `kb-key${ks[ch] ? ' kb-' + ks[ch] : ''}`;
-        key.textContent = ch;
-        rowEl.appendChild(key);
+    const ks: Record<string, string> = {};
+    for (let g = 0; g < state.guesses.length; g++) {
+      for (let i = 0; i < 5; i++) {
+        const ch = state.guesses[g][i];
+        const r  = state.results[g][i];
+        if (!ks[ch] || r === 'correct' || (r === 'present' && ks[ch] === 'absent')) ks[ch] = r;
       }
-      kbEl.appendChild(rowEl);
+    }
+    kbEl.querySelectorAll<HTMLButtonElement>('.kb-key[data-key]').forEach(btn => {
+      const ch = btn.dataset.key!;
+      btn.className = btn.classList.contains('kb-wide')
+        ? `kb-key kb-wide${ks[ch] ? ' kb-' + ks[ch] : ''}`
+        : `kb-key${ks[ch] ? ' kb-' + ks[ch] : ''}`;
     });
   }
 
-  function doShare() {
-    const text = buildShareText(state, day);
-    navigator.clipboard.writeText(text)
-      .then(() => { msgEl.innerHTML = '<span class="wl-win">copied to clipboard!</span>'; })
-      .catch(() => { msgEl.innerHTML = '<span class="wl-err">clipboard access denied</span>'; });
+  function renderActions() {
+    actionsEl.innerHTML = '';
+    if (state.solved || state.failed) {
+      const btn = document.createElement('button');
+      btn.className   = 'wl-share-btn';
+      btn.textContent = 'Share result';
+      btn.addEventListener('click', doShare);
+      actionsEl.appendChild(btn);
+    } else if (!state.hintUsed) {
+      const btn = document.createElement('button');
+      btn.className   = 'wl-hint-btn';
+      btn.textContent = 'Hint';
+      btn.addEventListener('click', doHint);
+      actionsEl.appendChild(btn);
+    }
   }
 
+  function renderStatus() {
+    if (state.solved) {
+      showMsg(`Solved in ${state.guesses.length}/6!`, 'win', 0);
+    } else if (state.failed) {
+      showMsg(`The word was ${target}`, 'err', 0);
+    }
+  }
+
+  function render() {
+    renderMeta();
+    renderGrid();
+    renderKeyboard();
+    renderActions();
+    renderStatus();
+  }
+
+  // ── Messages ──────────────────────────────────────────────────────────────
+  function showMsg(text: string, type: 'info' | 'err' | 'win' = 'info', duration = 2000) {
+    if (msgTimer) clearTimeout(msgTimer);
+    msgEl.textContent = text;
+    msgEl.className   = `wl-msg wl-msg-${type}`;
+    if (duration > 0) {
+      msgTimer = setTimeout(() => {
+        msgEl.textContent = '';
+        msgEl.className   = 'wl-msg';
+      }, duration);
+    }
+  }
+
+  // ── Game actions ──────────────────────────────────────────────────────────
   function doHint() {
     if (state.hintUsed || state.solved || state.failed) return;
     const known = new Set<number>();
@@ -118,77 +168,27 @@ import Prompt from '../components/Prompt.astro';
     const pos = unknown[Math.floor(Math.random() * unknown.length)];
     state.hintUsed = true;
     saveState(state);
-    msgEl.innerHTML =
-      `<span class="wl-dim">hint: position ${pos + 1} is</span>` +
-      ` <span class="wl-win">${target[pos]}</span>`;
-    actionsEl.innerHTML = '';
-  }
-
-  function renderActions() {
-    actionsEl.innerHTML = '';
-    if (state.solved || state.failed) {
-      const btn = document.createElement('button');
-      btn.className = 'wl-btn';
-      btn.textContent = '[ share result ]';
-      btn.addEventListener('click', doShare);
-      actionsEl.appendChild(btn);
-    } else if (!state.hintUsed) {
-      const btn = document.createElement('button');
-      btn.className = 'wl-btn';
-      btn.textContent = '[ hint ]';
-      btn.addEventListener('click', doHint);
-      actionsEl.appendChild(btn);
-    }
-  }
-
-  function renderStatus() {
-    if (state.solved) {
-      msgEl.innerHTML =
-        `<span class="wl-win">solved in ${state.guesses.length}/6!</span>` +
-        ` <span class="wl-dim">streak: ${state.streak} 🔥</span>`;
-      inputRow.style.display = 'none';
-    } else if (state.failed) {
-      msgEl.innerHTML =
-        `<span class="wl-err">the word was</span>` +
-        ` <span class="wl-win"> ${target}</span>` +
-        ` <span class="wl-dim">— next puzzle tomorrow</span>`;
-      inputRow.style.display = 'none';
-    } else {
-      const left = 6 - state.guesses.length;
-      msgEl.innerHTML = `<span class="wl-dim">${left} guess${left !== 1 ? 'es' : ''} remaining</span>`;
-    }
-  }
-
-  function render() {
-    renderHeader();
-    renderBoard();
-    renderKeyboard();
-    renderStatus();
+    showMsg(`Position ${pos + 1} is "${target[pos]}"`, 'info', 3000);
     renderActions();
   }
 
-  function submitGuess(raw: string) {
-    const guess = raw.trim().toUpperCase();
-    if (!guess || state.solved || state.failed) return;
+  function doShare() {
+    const text = buildShareText(state, day);
+    navigator.clipboard.writeText(text)
+      .then(() => showMsg('Copied!', 'win'))
+      .catch(() => showMsg('Clipboard access denied', 'err'));
+  }
 
-    if (guess.length !== 5) {
-      msgEl.innerHTML = '<span class="wl-err">must be exactly 5 letters</span>';
-      return;
-    }
-    if (!/^[A-Z]+$/.test(guess)) {
-      msgEl.innerHTML = '<span class="wl-err">letters only</span>';
-      return;
-    }
-    if (!isValidGuess(guess)) {
-      msgEl.innerHTML = `<span class="wl-err">"${guess}" is not in the word list</span>`;
-      return;
-    }
+  function submitGuess() {
+    if (state.solved || state.failed || !currentGuess) return;
+    if (currentGuess.length !== 5) { showMsg('Not enough letters', 'err'); return; }
+    if (!isValidGuess(currentGuess)) { showMsg('Not in word list', 'err'); return; }
 
-    const result = evaluateGuess(guess, target);
-    state.guesses.push(guess);
+    const result = evaluateGuess(currentGuess, target);
+    state.guesses.push(currentGuess);
     state.results.push(result);
 
-    if (guess === target) {
+    if (currentGuess === target) {
       state.solved = true;
       state.streak++;
       state.lastWin = todayStr();
@@ -197,106 +197,139 @@ import Prompt from '../components/Prompt.astro';
       state.streak = 0;
     }
 
+    currentGuess = '';
     saveState(state);
     render();
   }
 
-  inp.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter') return;
-    const val = inp.value;
-    inp.value = '';
-    submitGuess(val);
+  function addLetter(ch: string) {
+    if (state.solved || state.failed || currentGuess.length >= 5) return;
+    currentGuess += ch;
+    renderGrid();
+  }
+
+  function deleteLetter() {
+    if (!currentGuess.length) return;
+    currentGuess = currentGuess.slice(0, -1);
+    renderGrid();
+  }
+
+  function handleKey(key: string) {
+    if (key === '↵' || key === 'Enter')         submitGuess();
+    else if (key === '⌫' || key === 'Backspace') deleteLetter();
+    else if (/^[A-Z]$/.test(key))               addLetter(key);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Enter')                        submitGuess();
+    else if (e.key === 'Backspace')               deleteLetter();
+    else if (/^[a-zA-Z]$/.test(e.key))           addLetter(e.key.toUpperCase());
   });
 
-  inp.addEventListener('input', () => {
-    inp.value = inp.value.replace(/[^a-zA-Z]/g, '').slice(0, 5).toUpperCase();
-  });
-
-  inputRow.addEventListener('click', () => inp.focus());
-
+  buildKeyboard();
   render();
-  if (!state.solved && !state.failed) inp.focus();
 </script>
 
 <style>
-  #wl-header { margin-bottom: 1.5rem; }
-  .wl-day { color: var(--cyan); }
-  .wl-dim { color: var(--fg-dim); }
-  .wl-win { color: var(--green); }
-  .wl-err { color: #e05252; }
-
-  #wl-board { margin-bottom: 1.5rem; }
-  .wl-row { margin-bottom: 0.4rem; }
-
-  .wl-cell {
-    display: inline-block;
-    width: 3ch;
-    text-align: center;
-    font-weight: bold;
-    margin-right: 0.3ch;
-    line-height: 1.8;
+  .wl-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    padding-top: 0.5rem;
   }
-  .wl-correct { background: var(--green);      color: var(--bg); }
-  .wl-present { background: var(--fg-bright);  color: var(--bg); }
-  .wl-absent  { background: var(--fg-muted);   color: var(--bg); }
-  .wl-empty   { background: var(--bg-soft);    color: var(--fg-muted); }
 
-  #wl-msg { margin: 1rem 0; min-height: 1.5rem; }
+  /* Header */
+  .wl-header { text-align: center; }
+  .wl-title  { font-size: 1.1rem; font-weight: bold; color: var(--fg-bright); margin: 0 0 0.25rem; letter-spacing: 0.05em; }
+  .wl-meta   { font-size: 0.8rem; color: var(--fg-dim); }
 
-  #wl-kb { margin: 1.5rem 0; }
-  .kb-row { margin-bottom: 0.3rem; }
-  .kb-r1  { margin-left: 1.25ch; }
-  .kb-r2  { margin-left: 3ch; }
+  /* Message */
+  .wl-msg        { height: 1.4rem; font-size: 0.85rem; text-align: center; }
+  .wl-msg-info   { color: var(--fg-dim); }
+  .wl-msg-err    { color: #e05252; }
+  .wl-msg-win    { color: var(--green); }
 
-  .kb-key {
-    display: inline-block;
-    width: 2.5ch;
-    text-align: center;
-    font-size: 0.82rem;
-    margin-right: 0.2ch;
-    color: var(--fg-muted);
+  /* Grid */
+  .wl-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 3.25rem);
+    grid-template-rows: repeat(6, 3.25rem);
+    gap: 0.35rem;
   }
-  .kb-correct { color: var(--green);     font-weight: bold; }
-  .kb-present { color: var(--fg-bright); }
-  .kb-absent  { color: var(--bg-soft); }
 
-  .wl-input-row {
+  .cell {
     display: flex;
     align-items: center;
-    gap: 0.5ch;
-    margin-top: 1rem;
-    cursor: text;
-  }
-  .prompt-dim { color: var(--fg-dim); }
-
-  .wl-input-row input {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--fg-bright);
-    font-family: var(--font);
-    font-size: inherit;
-    caret-color: var(--fg-bright);
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: bold;
+    border: 2px solid;
     text-transform: uppercase;
-    letter-spacing: 0.3ch;
-    width: 10ch;
+    user-select: none;
   }
 
-  #wl-actions { margin-top: 1.5rem; }
+  .cell-empty   { border-color: var(--fg-muted);  color: transparent; background: transparent; }
+  .cell-input   { border-color: var(--fg-dim);    color: var(--fg-bright); background: transparent; }
+  .cell-correct { border-color: var(--green);     color: var(--bg); background: var(--green); }
+  .cell-present { border-color: var(--fg-bright); color: var(--bg); background: var(--fg-bright); }
+  .cell-absent  { border-color: #2a2500;          color: var(--fg-muted); background: #2a2500; }
 
-  .wl-btn {
+  /* Keyboard */
+  .wl-keyboard { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .kb-row      { display: flex; gap: 0.3rem; }
+
+  .kb-key {
+    height: 3.25rem;
+    min-width: 2.25rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--fg-muted);
+    background: var(--bg-soft);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 0;
+    transition: background 0.1s, color 0.1s;
+    user-select: none;
+  }
+  .kb-wide     { min-width: 3.5rem; font-size: 0.75rem; }
+  .kb-key:hover { background: var(--fg-muted); color: var(--bg); }
+
+  .kb-correct  { background: var(--green);     color: var(--bg); border-color: var(--green); }
+  .kb-present  { background: var(--fg-bright); color: var(--bg); border-color: var(--fg-bright); }
+  .kb-absent   { background: #2a2500; color: var(--fg-muted); border-color: #2a2500; }
+
+  /* Actions */
+  .wl-actions    { display: flex; gap: 0.75rem; }
+
+  .wl-share-btn,
+  .wl-hint-btn {
     background: none;
     border: 1px solid var(--fg-muted);
     color: var(--fg-dim);
     font-family: var(--font);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     cursor: pointer;
-    padding: 0.25rem 0.8rem;
-    margin-right: 0.5rem;
+    padding: 0.35rem 1.2rem;
     transition: color 0.1s, border-color 0.1s;
   }
-  .wl-btn:hover {
+  .wl-share-btn:hover,
+  .wl-hint-btn:hover {
     color: var(--fg-bright);
     border-color: var(--fg);
+  }
+
+  @media (max-width: 420px) {
+    .wl-grid {
+      grid-template-columns: repeat(5, 2.8rem);
+      grid-template-rows: repeat(6, 2.8rem);
+      gap: 0.3rem;
+    }
+    .cell { font-size: 1.2rem; }
+    .kb-key { height: 2.8rem; min-width: 1.9rem; font-size: 0.75rem; }
+    .kb-wide { min-width: 3rem; }
   }
 </style>
