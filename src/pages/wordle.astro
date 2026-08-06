@@ -140,7 +140,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const done = state.solved || state.failed;
     target.split('').forEach(ch => {
       const tile = document.createElement('div');
-      tile.className = done ? 'tile tile-answer' : 'tile tile-empty';
+      tile.className = 'tile tile-answer';
       tile.textContent = done ? ch : '';
       answerEl.appendChild(tile);
     });
