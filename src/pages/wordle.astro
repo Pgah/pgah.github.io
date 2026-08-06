@@ -12,6 +12,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     <div id="wl-msg" class="wl-msg"></div>
 
+    <div id="wl-answer" class="wl-answer"></div>
+
     <div class="wl-grid" id="wl-grid"></div>
 
     <div id="wl-actions" class="wl-actions"></div>
@@ -36,6 +38,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   const metaEl    = document.getElementById('wl-meta')!;
   const msgEl     = document.getElementById('wl-msg')!;
+  const answerEl  = document.getElementById('wl-answer')!;
   const gridEl    = document.getElementById('wl-grid')!;
   const kbEl      = document.getElementById('wl-keyboard')!;
   const actionsEl = document.getElementById('wl-actions')!;
@@ -132,13 +135,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
   }
 
+  function renderAnswer() {
+    answerEl.innerHTML = '';
+    if (!state.solved && !state.failed) return;
+    target.split('').forEach(ch => {
+      const tile = document.createElement('div');
+      tile.className = 'tile tile-correct';
+      tile.textContent = ch;
+      answerEl.appendChild(tile);
+    });
+  }
+
   function renderStatus() {
     if (state.solved)      showMsg(`Solved in ${state.guesses.length}/6! 🎉`, 'win', 0);
-    else if (state.failed) showMsg(`The word was ${target}`, 'err', 0);
+    else if (state.failed) showMsg('Better luck tomorrow!', 'err', 0);
   }
 
   function render() {
     renderMeta();
+    renderAnswer();
     renderGrid();
     renderKeyboard();
     renderActions();
@@ -246,6 +261,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .wl-msg-info  { color: var(--fg-dim); }
   .wl-msg-err   { color: #e05252; }
   .wl-msg-win   { color: var(--green); }
+
+  /* ── Answer reveal ────────────────────────────────────────────────────── */
+  .wl-answer {
+    display: flex;
+    gap: 0.35rem;
+    justify-content: center;
+    min-height: 0;
+  }
 
   /* ── Grid ──────────────────────────────────────────────────────────────── */
   .wl-grid {
