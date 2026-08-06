@@ -14,10 +14,6 @@ import {
   rot13, caesar, sha, decodeJwt, HASH_ALGOS, type HashAlgo,
 } from './crypto';
 import { subnet, lookupPort } from './network';
-import {
-  getDailyWord, dayIndex, loadState, saveState, evaluateGuess,
-  formatBoard, isValidGuess, buildShareText, todayStr,
-} from './wordle';
 
 export interface PostMeta {
   id: string;
@@ -498,120 +494,6 @@ export const commands: Command[] = [
       ctx.addLine(`<span class="term-cmd">"${ctx.esc(f)}"</span>`);
     },
   },
-  {
-    name: 'wordle', category: 'utilities',
-    usage: 'wordle', summary: 'daily security word puzzle',
-    variants: [
-      { usage: 'wordle &lt;guess&gt;', summary: 'make a 5-letter guess' },
-      { usage: 'wordle hint', summary: 'reveal one letter (once per game)' },
-      { usage: 'wordle share', summary: 'copy result to clipboard' },
-    ],
-    run(ctx, args) {
-      const state = loadState();
-      const target = getDailyWord();
-      const day = dayIndex();
-
-      function showBoard() {
-        const board = formatBoard(state);
-        const left = 6 - state.guesses.length;
-        ctx.addLine(`<span style="color:var(--cyan)">Security Wordle #${day}</span> <span class="term-dim">— ${state.date}</span>`);
-        ctx.addLine(DIVIDER);
-        board.forEach(row => ctx.addLine(`  ${row}`));
-        ctx.addLine(DIVIDER);
-        if (state.solved) {
-          ctx.addLine(`<span style="color:var(--green)">solved in ${state.guesses.length}/6!</span> <span class="term-dim">streak: ${state.streak} 🔥</span>`);
-          ctx.addLine('<span class="term-dim">type  wordle share  to copy your result</span>');
-        } else if (state.failed) {
-          ctx.addLine(`<span class="term-err">the word was</span> <span style="color:var(--green)">${target}</span>`);
-          ctx.addLine('<span class="term-dim">next puzzle resets tomorrow</span>');
-        } else {
-          ctx.addLine(`<span class="term-dim">${left} guess${left !== 1 ? 'es' : ''} remaining — wordle &lt;guess&gt;</span>`);
-          if (!state.hintUsed) ctx.addLine('<span class="term-dim">wordle hint  →  reveal one letter</span>');
-        }
-      }
-
-      const sub = args[0]?.toUpperCase();
-
-      if (sub === 'SHARE') {
-        if (!state.solved && !state.failed) {
-          ctx.addLine('<span class="term-err">wordle: finish the game first</span>');
-          return;
-        }
-        const text = buildShareText(state, day);
-        navigator.clipboard.writeText(text)
-          .then(() => {
-            ctx.addLine('<span style="color:var(--green)">copied to clipboard!</span>');
-            text.split('\n').forEach(l => ctx.addLine(`<span class="term-dim">${ctx.esc(l)}</span>`));
-          })
-          .catch(() => ctx.addLine('<span class="term-err">wordle: clipboard access denied</span>'));
-        return;
-      }
-
-      if (sub === 'HINT') {
-        if (state.solved || state.failed) {
-          ctx.addLine('<span class="term-dim">game over — next puzzle tomorrow</span>');
-          return;
-        }
-        if (state.hintUsed) {
-          ctx.addLine('<span class="term-err">wordle: only one hint per day</span>');
-          return;
-        }
-        const knownPositions = new Set<number>();
-        for (const r of state.results) r.forEach((v, i) => { if (v === 'correct') knownPositions.add(i); });
-        const unknown = [0, 1, 2, 3, 4].filter(i => !knownPositions.has(i));
-        if (!unknown.length) { ctx.addLine('<span class="term-dim">all positions solved — no hint needed</span>'); return; }
-        const pos = unknown[Math.floor(Math.random() * unknown.length)];
-        state.hintUsed = true;
-        saveState(state);
-        ctx.addLine(`<span class="term-dim">hint: position ${pos + 1} is</span> <span style="color:var(--green);font-weight:bold">${target[pos]}</span>`);
-        return;
-      }
-
-      if (!sub) {
-        showBoard();
-        return;
-      }
-
-      // It's a guess
-      if (state.solved) {
-        ctx.addLine('<span style="color:var(--green)">already solved!</span> <span class="term-dim">next puzzle tomorrow</span>');
-        return;
-      }
-      if (state.failed) {
-        ctx.addLine(`<span class="term-err">game over</span> — the word was <span style="color:var(--green)">${target}</span>. Next puzzle tomorrow.`);
-        return;
-      }
-      if (sub.length !== 5) {
-        ctx.addLine('<span class="term-err">wordle: guess must be exactly 5 letters</span>');
-        return;
-      }
-      if (!/^[A-Z]+$/.test(sub)) {
-        ctx.addLine('<span class="term-err">wordle: letters only</span>');
-        return;
-      }
-      if (!isValidGuess(sub)) {
-        ctx.addLine(`<span class="term-err">wordle: "${ctx.esc(sub)}" is not in the word list</span>`);
-        return;
-      }
-
-      const result = evaluateGuess(sub, target);
-      state.guesses.push(sub);
-      state.results.push(result);
-
-      if (sub === target) {
-        state.solved = true;
-        state.streak++;
-        state.lastWin = todayStr();
-      } else if (state.guesses.length >= 6) {
-        state.failed = true;
-        state.streak = 0;
-      }
-
-      saveState(state);
-      showBoard();
-    },
-  },
-
   {
     name: 'theme', category: 'utilities',
     usage: 'theme &lt;name&gt;', summary: `switch color theme (${THEMES.join(', ')})`,

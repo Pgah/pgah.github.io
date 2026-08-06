@@ -3,8 +3,9 @@ const raw = Astro.url.pathname;
 const current = raw.endsWith('/') && raw !== '/' ? raw.slice(0, -1) : raw;
 
 const links = [
-  { href: '/',       label: 'blogs',  match: '/' },
-  { href: '/about',  label: 'about',   match: '/about' },
+  { href: '/',        label: 'blogs',   match: '/' },
+  { href: '/about',   label: 'about',   match: '/about' },
+  { href: '/wordle',  label: 'wordle',  match: '/wordle' },
   { href: 'https://www.youtube.com/watch?v=ztABYog5x3o', label: 'follow-the-white-rabbit', match: null, external: true },
 ];
 ---

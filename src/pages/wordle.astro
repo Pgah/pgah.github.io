@@ -1,0 +1,302 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Prompt from '../components/Prompt.astro';
+---
+
+<BaseLayout title="wordle" description="Daily security word puzzle — a new 5-letter cyber term every day">
+  <Prompt command="play wordle" />
+
+  <div id="wl-header"></div>
+  <div id="wl-board"></div>
+  <div id="wl-msg"></div>
+  <div id="wl-kb"></div>
+
+  <div id="wl-input-row" class="wl-input-row">
+    <span class="prompt-dim">sleeper@wordle:~$</span>&nbsp;<input
+      id="wl-inp"
+      type="text"
+      maxlength="5"
+      autocomplete="off"
+      spellcheck="false"
+    />
+  </div>
+
+  <div id="wl-actions"></div>
+</BaseLayout>
+
+<script>
+  import {
+    getDailyWord, dayIndex, loadState, saveState, evaluateGuess,
+    isValidGuess, buildShareText, todayStr,
+  } from '../lib/wordle';
+
+  const state = loadState();
+  const target = getDailyWord();
+  const day = dayIndex();
+
+  const headerEl  = document.getElementById('wl-header')!;
+  const boardEl   = document.getElementById('wl-board')!;
+  const msgEl     = document.getElementById('wl-msg')!;
+  const kbEl      = document.getElementById('wl-kb')!;
+  const inputRow  = document.getElementById('wl-input-row')!;
+  const actionsEl = document.getElementById('wl-actions')!;
+  const inp       = document.getElementById('wl-inp') as HTMLInputElement;
+
+  type KeyStatus = 'correct' | 'present' | 'absent';
+
+  function getKeyState(): Record<string, KeyStatus> {
+    const ks: Record<string, KeyStatus> = {};
+    for (let g = 0; g < state.guesses.length; g++) {
+      const guess  = state.guesses[g];
+      const result = state.results[g];
+      for (let i = 0; i < 5; i++) {
+        const ch = guess[i];
+        const r  = result[i] as KeyStatus;
+        if (!ks[ch] || r === 'correct' || (r === 'present' && ks[ch] === 'absent')) {
+          ks[ch] = r;
+        }
+      }
+    }
+    return ks;
+  }
+
+  function renderHeader() {
+    headerEl.innerHTML =
+      `<span class="wl-day">Security Wordle #${day}</span>` +
+      ` <span class="wl-dim">— ${state.date}</span>`;
+  }
+
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    for (let i = 0; i < 6; i++) {
+      const row = document.createElement('div');
+      row.className = 'wl-row';
+      for (let j = 0; j < 5; j++) {
+        const cell = document.createElement('span');
+        if (i < state.guesses.length) {
+          cell.className = `wl-cell wl-${state.results[i][j]}`;
+          cell.textContent = state.guesses[i][j];
+        } else {
+          cell.className = 'wl-cell wl-empty';
+          cell.textContent = '·';
+        }
+        row.appendChild(cell);
+      }
+      boardEl.appendChild(row);
+    }
+  }
+
+  function renderKeyboard() {
+    const ks = getKeyState();
+    kbEl.innerHTML = '';
+    ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'].forEach((letters, ri) => {
+      const rowEl = document.createElement('div');
+      rowEl.className = `kb-row kb-r${ri}`;
+      for (const ch of letters) {
+        const key = document.createElement('span');
+        key.className = `kb-key${ks[ch] ? ' kb-' + ks[ch] : ''}`;
+        key.textContent = ch;
+        rowEl.appendChild(key);
+      }
+      kbEl.appendChild(rowEl);
+    });
+  }
+
+  function doShare() {
+    const text = buildShareText(state, day);
+    navigator.clipboard.writeText(text)
+      .then(() => { msgEl.innerHTML = '<span class="wl-win">copied to clipboard!</span>'; })
+      .catch(() => { msgEl.innerHTML = '<span class="wl-err">clipboard access denied</span>'; });
+  }
+
+  function doHint() {
+    if (state.hintUsed || state.solved || state.failed) return;
+    const known = new Set<number>();
+    for (const r of state.results) r.forEach((v, i) => { if (v === 'correct') known.add(i); });
+    const unknown = [0, 1, 2, 3, 4].filter(i => !known.has(i));
+    if (!unknown.length) return;
+    const pos = unknown[Math.floor(Math.random() * unknown.length)];
+    state.hintUsed = true;
+    saveState(state);
+    msgEl.innerHTML =
+      `<span class="wl-dim">hint: position ${pos + 1} is</span>` +
+      ` <span class="wl-win">${target[pos]}</span>`;
+    actionsEl.innerHTML = '';
+  }
+
+  function renderActions() {
+    actionsEl.innerHTML = '';
+    if (state.solved || state.failed) {
+      const btn = document.createElement('button');
+      btn.className = 'wl-btn';
+      btn.textContent = '[ share result ]';
+      btn.addEventListener('click', doShare);
+      actionsEl.appendChild(btn);
+    } else if (!state.hintUsed) {
+      const btn = document.createElement('button');
+      btn.className = 'wl-btn';
+      btn.textContent = '[ hint ]';
+      btn.addEventListener('click', doHint);
+      actionsEl.appendChild(btn);
+    }
+  }
+
+  function renderStatus() {
+    if (state.solved) {
+      msgEl.innerHTML =
+        `<span class="wl-win">solved in ${state.guesses.length}/6!</span>` +
+        ` <span class="wl-dim">streak: ${state.streak} 🔥</span>`;
+      inputRow.style.display = 'none';
+    } else if (state.failed) {
+      msgEl.innerHTML =
+        `<span class="wl-err">the word was</span>` +
+        ` <span class="wl-win"> ${target}</span>` +
+        ` <span class="wl-dim">— next puzzle tomorrow</span>`;
+      inputRow.style.display = 'none';
+    } else {
+      const left = 6 - state.guesses.length;
+      msgEl.innerHTML = `<span class="wl-dim">${left} guess${left !== 1 ? 'es' : ''} remaining</span>`;
+    }
+  }
+
+  function render() {
+    renderHeader();
+    renderBoard();
+    renderKeyboard();
+    renderStatus();
+    renderActions();
+  }
+
+  function submitGuess(raw: string) {
+    const guess = raw.trim().toUpperCase();
+    if (!guess || state.solved || state.failed) return;
+
+    if (guess.length !== 5) {
+      msgEl.innerHTML = '<span class="wl-err">must be exactly 5 letters</span>';
+      return;
+    }
+    if (!/^[A-Z]+$/.test(guess)) {
+      msgEl.innerHTML = '<span class="wl-err">letters only</span>';
+      return;
+    }
+    if (!isValidGuess(guess)) {
+      msgEl.innerHTML = `<span class="wl-err">"${guess}" is not in the word list</span>`;
+      return;
+    }
+
+    const result = evaluateGuess(guess, target);
+    state.guesses.push(guess);
+    state.results.push(result);
+
+    if (guess === target) {
+      state.solved = true;
+      state.streak++;
+      state.lastWin = todayStr();
+    } else if (state.guesses.length >= 6) {
+      state.failed = true;
+      state.streak = 0;
+    }
+
+    saveState(state);
+    render();
+  }
+
+  inp.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const val = inp.value;
+    inp.value = '';
+    submitGuess(val);
+  });
+
+  inp.addEventListener('input', () => {
+    inp.value = inp.value.replace(/[^a-zA-Z]/g, '').slice(0, 5).toUpperCase();
+  });
+
+  inputRow.addEventListener('click', () => inp.focus());
+
+  render();
+  if (!state.solved && !state.failed) inp.focus();
+</script>
+
+<style>
+  #wl-header { margin-bottom: 1.5rem; }
+  .wl-day { color: var(--cyan); }
+  .wl-dim { color: var(--fg-dim); }
+  .wl-win { color: var(--green); }
+  .wl-err { color: #e05252; }
+
+  #wl-board { margin-bottom: 1.5rem; }
+  .wl-row { margin-bottom: 0.4rem; }
+
+  .wl-cell {
+    display: inline-block;
+    width: 3ch;
+    text-align: center;
+    font-weight: bold;
+    margin-right: 0.3ch;
+    line-height: 1.8;
+  }
+  .wl-correct { background: var(--green);      color: var(--bg); }
+  .wl-present { background: var(--fg-bright);  color: var(--bg); }
+  .wl-absent  { background: var(--fg-muted);   color: var(--bg); }
+  .wl-empty   { background: var(--bg-soft);    color: var(--fg-muted); }
+
+  #wl-msg { margin: 1rem 0; min-height: 1.5rem; }
+
+  #wl-kb { margin: 1.5rem 0; }
+  .kb-row { margin-bottom: 0.3rem; }
+  .kb-r1  { margin-left: 1.25ch; }
+  .kb-r2  { margin-left: 3ch; }
+
+  .kb-key {
+    display: inline-block;
+    width: 2.5ch;
+    text-align: center;
+    font-size: 0.82rem;
+    margin-right: 0.2ch;
+    color: var(--fg-muted);
+  }
+  .kb-correct { color: var(--green);     font-weight: bold; }
+  .kb-present { color: var(--fg-bright); }
+  .kb-absent  { color: var(--bg-soft); }
+
+  .wl-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5ch;
+    margin-top: 1rem;
+    cursor: text;
+  }
+  .prompt-dim { color: var(--fg-dim); }
+
+  .wl-input-row input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--fg-bright);
+    font-family: var(--font);
+    font-size: inherit;
+    caret-color: var(--fg-bright);
+    text-transform: uppercase;
+    letter-spacing: 0.3ch;
+    width: 10ch;
+  }
+
+  #wl-actions { margin-top: 1.5rem; }
+
+  .wl-btn {
+    background: none;
+    border: 1px solid var(--fg-muted);
+    color: var(--fg-dim);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.25rem 0.8rem;
+    margin-right: 0.5rem;
+    transition: color 0.1s, border-color 0.1s;
+  }
+  .wl-btn:hover {
+    color: var(--fg-bright);
+    border-color: var(--fg);
+  }
+</style>
