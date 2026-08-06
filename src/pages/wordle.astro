@@ -277,30 +277,30 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .cell-absent  { border-color: #2a2500;          color: var(--fg-muted); background: #2a2500; }
 
   /* Keyboard */
-  .wl-keyboard { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
-  .kb-row      { display: flex; gap: 0.3rem; }
+  .wl-keyboard { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; }
+  .kb-row      { display: flex; gap: 0.45rem; }
 
   .kb-key {
-    height: 3.25rem;
-    min-width: 2.25rem;
-    padding: 0 0.5rem;
+    height: 4rem;
+    min-width: 3rem;
+    padding: 0 0.4rem;
     border: 1px solid var(--fg-muted);
-    background: var(--bg-soft);
-    color: var(--fg);
+    background: #1c1a00;
+    color: var(--fg-bright);
     font-family: var(--font);
-    font-size: 0.85rem;
+    font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
     border-radius: 0;
     transition: background 0.1s, color 0.1s;
     user-select: none;
   }
-  .kb-wide     { min-width: 3.5rem; font-size: 0.75rem; }
+  .kb-wide      { min-width: 4.5rem; font-size: 0.85rem; }
   .kb-key:hover { background: var(--fg-muted); color: var(--bg); }
 
   .kb-correct  { background: var(--green);     color: var(--bg); border-color: var(--green); }
-  .kb-present  { background: var(--fg-bright); color: var(--bg); border-color: var(--fg-bright); }
-  .kb-absent   { background: #2a2500; color: var(--fg-muted); border-color: #2a2500; }
+  .kb-present  { background: var(--fg);        color: var(--bg); border-color: var(--fg); }
+  .kb-absent   { background: #0e0d00; color: #2e2a00; border-color: #1a1800; }
 
   /* Actions */
   .wl-actions    { display: flex; gap: 0.75rem; }
