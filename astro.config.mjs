@@ -4,7 +4,7 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
-  site: 'https://matrix-303.pages.dev',
+  site: 'https://pgah.github.io',
   integrations: [mdx(), sitemap()],
   markdown: {
     shikiConfig: {
