@@ -51,7 +51,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   }
 
   // ── Keyboard init ─────────────────────────────────────────────────────────
-  const KB_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', '↵ZXCVBNM⌫'];
+  const KB_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
   function buildKeyboard() {
     kbEl.innerHTML = '';
@@ -60,7 +60,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       row.className = 'kb-row';
       for (const ch of letters) {
         const btn = document.createElement('button');
-        btn.className = ch === '↵' || ch === '⌫' ? 'kb-key kb-wide' : 'kb-key';
+        btn.className = 'kb-key';
         btn.textContent = ch;
         btn.dataset.key = ch;
         btn.addEventListener('click', () => handleKey(ch));
@@ -270,32 +270,31 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     user-select: none;
   }
 
-  .cell-empty   { border-color: var(--fg-dim);     color: transparent; background: transparent; }
-  .cell-input   { border-color: var(--fg-bright); color: var(--fg-bright); background: transparent; }
+  .cell-empty   { border-color: var(--fg-dim);     color: transparent;      background: var(--bg-soft); }
+  .cell-input   { border-color: var(--fg-bright); color: var(--fg-bright); background: var(--bg-soft); }
   .cell-correct { border-color: var(--green);     color: var(--bg); background: var(--green); }
   .cell-present { border-color: var(--fg-bright); color: var(--bg); background: var(--fg-bright); }
   .cell-absent  { border-color: #2a2500;          color: var(--fg-muted); background: #2a2500; }
 
   /* Keyboard */
-  .wl-keyboard { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; }
-  .kb-row      { display: flex; gap: 0.45rem; }
+  .wl-keyboard { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .kb-row      { display: flex; gap: 0.3rem; }
 
   .kb-key {
-    height: 4rem;
-    min-width: 3rem;
-    padding: 0 0.4rem;
+    height: 2.6rem;
+    min-width: 2rem;
+    padding: 0 0.25rem;
     border: 2px solid var(--fg-dim);
     background: #1c1a00;
     color: var(--fg-bright);
     font-family: var(--font);
-    font-size: 1rem;
+    font-size: 0.8rem;
     font-weight: bold;
     cursor: pointer;
     border-radius: 0;
     transition: background 0.1s, color 0.1s;
     user-select: none;
   }
-  .kb-wide      { min-width: 4.5rem; font-size: 0.85rem; }
   .kb-key:hover { background: var(--fg-muted); color: var(--bg); }
 
   .kb-correct  { background: var(--green);     color: var(--bg); border-color: var(--green); }
@@ -329,7 +328,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       gap: 0.3rem;
     }
     .cell { font-size: 1.2rem; }
-    .kb-key { height: 2.8rem; min-width: 1.9rem; font-size: 0.75rem; }
-    .kb-wide { min-width: 3rem; }
+    .kb-key { height: 2.4rem; min-width: 1.75rem; font-size: 0.7rem; }
   }
 </style>
