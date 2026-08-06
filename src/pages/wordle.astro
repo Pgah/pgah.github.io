@@ -140,7 +140,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     if (!state.solved && !state.failed) return;
     target.split('').forEach(ch => {
       const tile = document.createElement('div');
-      tile.className = 'tile tile-correct';
+      tile.className = 'tile tile-answer';
       tile.textContent = ch;
       answerEl.appendChild(tile);
     });
@@ -299,6 +299,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .tile-correct { background: var(--green);      border-color: var(--green);      color: var(--bg); }
   .tile-present { background: var(--fg-bright);  border-color: var(--fg-bright);  color: var(--bg); }
   .tile-absent  { background: #252200;           border-color: #252200;           color: var(--fg-muted); }
+  .tile-answer  { background: var(--bg-soft); border-color: var(--fg); color: var(--fg-bright); }
 
   /* ── Actions ───────────────────────────────────────────────────────────── */
   .wl-actions { min-height: 2rem; display: flex; align-items: center; }
