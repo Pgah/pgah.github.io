@@ -270,6 +270,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     min-height: 0;
   }
 
+  .wl-answer .tile {
+    width: 3.8rem;
+    height: 3.8rem;
+  }
+
   /* ── Grid ──────────────────────────────────────────────────────────────── */
   .wl-grid {
     display: grid;
@@ -289,7 +294,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     user-select: none;
   }
 
-  .tile-empty   { background: var(--bg-soft); border-color: var(--fg-dim);    color: transparent; }
+  .tile-empty   { background: #181500; border-color: #605800; color: transparent; }
   .tile-input   { background: var(--bg-soft); border-color: var(--fg-bright); color: var(--fg-bright); }
   .tile-correct { background: var(--green);      border-color: var(--green);      color: var(--bg); }
   .tile-present { background: var(--fg-bright);  border-color: var(--fg-bright);  color: var(--bg); }
