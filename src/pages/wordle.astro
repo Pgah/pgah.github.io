@@ -137,11 +137,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   function renderAnswer() {
     answerEl.innerHTML = '';
-    if (!state.solved && !state.failed) return;
+    const done = state.solved || state.failed;
     target.split('').forEach(ch => {
       const tile = document.createElement('div');
-      tile.className = 'tile tile-answer';
-      tile.textContent = ch;
+      tile.className = done ? 'tile tile-answer' : 'tile tile-empty';
+      tile.textContent = done ? ch : '';
       answerEl.appendChild(tile);
     });
   }
