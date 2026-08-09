@@ -1,0 +1,395 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Prompt from '../components/Prompt.astro';
+
+const rows = [0, 1, 2, 3, 4, 5];
+const cols = [0, 1, 2, 3, 4];
+const keyRows = [
+  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+  ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACK'],
+];
+---
+
+<BaseLayout title="wordle" description="Günlük Security Wordle — 5 harfli siber güvenlik terimini tahmin et">
+  <Prompt command="./wordle --daily" />
+
+  <section class="wl">
+    <p class="wl-intro">
+      Günün 5 harfli siber güvenlik terimini <strong>6 denemede</strong> bul.
+      Her tahminden sonra kutucuklar renk değiştirir:
+    </p>
+
+    <ul class="wl-legend">
+      <li><span class="chip correct">A</span> doğru harf, doğru yer</li>
+      <li><span class="chip present">B</span> harf var ama yeri yanlış</li>
+      <li><span class="chip absent">C</span> harf kelimede yok</li>
+    </ul>
+
+    <div class="wl-grid" id="grid">
+      {rows.map((r) => (
+        <div class="wl-row" data-row={r}>
+          {cols.map((c) => (
+            <div class="tile" data-row={r} data-col={c}></div>
+          ))}
+        </div>
+      ))}
+    </div>
+
+    <div class="wl-msg" id="msg" role="status" aria-live="polite"></div>
+
+    <div class="wl-keyboard" id="keyboard">
+      {keyRows.map((row) => (
+        <div class="kb-row">
+          {row.map((k) => (
+            <button
+              class={`key ${k === 'ENTER' || k === 'BACK' ? 'key-wide' : ''}`}
+              data-key={k}
+              type="button"
+            >{k === 'BACK' ? '⌫' : k}</button>
+          ))}
+        </div>
+      ))}
+    </div>
+
+    <div class="wl-footer">
+      <span id="streak" class="wl-streak"></span>
+      <button id="share" class="wl-share" type="button" hidden>paylaş</button>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import {
+    evaluateGuess, isValidGuess, loadState, saveState,
+    getDailyWord, dayIndex, buildShareText, todayStr,
+    type GuessResult, type WordleState,
+  } from '../lib/wordle';
+
+  const grid = document.getElementById('grid')!;
+  const keyboard = document.getElementById('keyboard')!;
+  const msgEl = document.getElementById('msg')!;
+  const streakEl = document.getElementById('streak')!;
+  const shareBtn = document.getElementById('share') as HTMLButtonElement;
+
+  const target = getDailyWord();
+  const state: WordleState = loadState();
+  let currentRow = state.guesses.length;
+  let currentGuess = '';
+  // key -> best known result, used to colour the on-screen keyboard.
+  const keyState: Record<string, GuessResult> = {};
+
+  function tile(row: number, col: number): HTMLElement {
+    return grid.querySelector(`.tile[data-row="${row}"][data-col="${col}"]`)!;
+  }
+
+  function setMsg(text: string): void {
+    msgEl.textContent = text;
+  }
+
+  function applyResultClasses(el: HTMLElement, result: GuessResult): void {
+    el.classList.remove('correct', 'present', 'absent');
+    el.classList.add(result);
+  }
+
+  // Correct beats present beats absent — never downgrade a key's colour.
+  const RANK: Record<GuessResult, number> = { correct: 3, present: 2, absent: 1 };
+  function updateKeyState(letter: string, result: GuessResult): void {
+    const prev = keyState[letter];
+    if (!prev || RANK[result] > RANK[prev]) {
+      keyState[letter] = result;
+      const btn = keyboard.querySelector(`.key[data-key="${letter}"]`);
+      if (btn) applyResultClasses(btn as HTMLElement, result);
+    }
+  }
+
+  function renderGuess(row: number, guess: string, result: GuessResult[]): void {
+    for (let c = 0; c < 5; c++) {
+      const el = tile(row, c);
+      el.textContent = guess[c];
+      el.classList.add('filled');
+      applyResultClasses(el, result[c]);
+      updateKeyState(guess[c], result[c]);
+    }
+  }
+
+  function renderStreak(): void {
+    streakEl.textContent = state.streak > 0 ? `seri: ${state.streak} 🔥` : '';
+  }
+
+  function finishGame(won: boolean): void {
+    if (won) {
+      setMsg(`çözüldü — ${state.guesses.length}/6 🎉`);
+    } else {
+      setMsg(`kaybettin — kelime: ${target}`);
+    }
+    renderStreak();
+    shareBtn.hidden = false;
+  }
+
+  function restore(): void {
+    state.guesses.forEach((g, i) => renderGuess(i, g, state.results[i]));
+    renderStreak();
+    if (state.solved) finishGame(true);
+    else if (state.failed) finishGame(false);
+  }
+
+  function paintCurrent(): void {
+    for (let c = 0; c < 5; c++) {
+      const el = tile(currentRow, c);
+      el.textContent = currentGuess[c] ?? '';
+      el.classList.toggle('filled', c < currentGuess.length);
+    }
+  }
+
+  function shake(): void {
+    const row = grid.querySelector(`.wl-row[data-row="${currentRow}"]`);
+    if (!row) return;
+    row.classList.remove('shake');
+    void (row as HTMLElement).offsetWidth; // reflow to restart animation
+    row.classList.add('shake');
+  }
+
+  function gameOver(): boolean {
+    return state.solved || state.failed;
+  }
+
+  function submitGuess(): void {
+    if (currentGuess.length < 5) {
+      setMsg('5 harf gerekli');
+      shake();
+      return;
+    }
+    if (!isValidGuess(currentGuess)) {
+      setMsg('listede yok');
+      shake();
+      return;
+    }
+
+    const result = evaluateGuess(currentGuess, target);
+    state.guesses.push(currentGuess);
+    state.results.push(result);
+    renderGuess(currentRow, currentGuess, result);
+    setMsg('');
+
+    const won = result.every((r) => r === 'correct');
+    if (won) {
+      state.solved = true;
+      state.streak = (state.lastWin === todayStr() ? state.streak : state.streak + 1);
+      state.lastWin = todayStr();
+    } else if (state.guesses.length >= 6) {
+      state.failed = true;
+    }
+
+    saveState(state);
+    currentRow += 1;
+    currentGuess = '';
+
+    if (state.solved) finishGame(true);
+    else if (state.failed) finishGame(false);
+  }
+
+  function pressLetter(letter: string): void {
+    if (gameOver() || currentGuess.length >= 5) return;
+    currentGuess += letter;
+    paintCurrent();
+    setMsg('');
+  }
+
+  function pressBackspace(): void {
+    if (gameOver() || currentGuess.length === 0) return;
+    currentGuess = currentGuess.slice(0, -1);
+    paintCurrent();
+  }
+
+  function handleKey(key: string): void {
+    if (key === 'ENTER') submitGuess();
+    else if (key === 'BACK') pressBackspace();
+    else pressLetter(key);
+  }
+
+  keyboard.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.key') as HTMLElement | null;
+    if (btn?.dataset.key) handleKey(btn.dataset.key);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'Enter') handleKey('ENTER');
+    else if (e.key === 'Backspace') handleKey('BACK');
+    else if (/^[a-zA-Z]$/.test(e.key)) handleKey(e.key.toUpperCase());
+  });
+
+  shareBtn.addEventListener('click', async () => {
+    const text = buildShareText(state, dayIndex());
+    try {
+      await navigator.clipboard.writeText(text);
+      setMsg('sonuç panoya kopyalandı');
+    } catch {
+      setMsg('kopyalanamadı');
+    }
+  });
+
+  restore();
+</script>
+
+<style>
+  /* NOTE: no background/panel on the wrapper — <main> already provides the
+     translucent panel over the matrix. Tiles use theme vars only (no fixed
+     black), so all three themes (gold/matrix/amber) stay consistent. */
+  .wl {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .wl-intro {
+    color: var(--fg);
+    text-align: center;
+    max-width: 48ch;
+    margin: 0;
+  }
+  .wl-intro strong { color: var(--fg-bright); }
+
+  .wl-legend {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem 1.2rem;
+    font-size: 0.85rem;
+    color: var(--fg-dim);
+  }
+  .wl-legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.5ch;
+    margin: 0;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    font-weight: bold;
+    border: 2px solid var(--fg-muted);
+  }
+
+  .wl-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .wl-row {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .tile {
+    width: 3.4rem;
+    height: 3.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    background: transparent;
+    border: 2px solid var(--fg-muted);
+    color: var(--fg);
+    transition: border-color 0.1s, background 0.1s;
+  }
+  .tile.filled {
+    border-color: var(--fg-dim);
+  }
+
+  /* Shared result palette for tiles, keyboard keys and legend chips. */
+  .correct { background: var(--green); border-color: var(--green); color: var(--bg); }
+  .present { background: var(--fg-bright); border-color: var(--fg-bright); color: var(--bg); }
+  .absent  { background: var(--bg-soft); border-color: var(--fg-muted); color: var(--fg-dim); }
+
+  .wl-msg {
+    min-height: 1.4rem;
+    color: var(--fg-bright);
+    text-align: center;
+  }
+
+  .wl-keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 100%;
+    max-width: 30rem;
+  }
+  .kb-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+  }
+  .key {
+    flex: 1 1 auto;
+    min-width: 1.8rem;
+    max-width: 2.6rem;
+    height: 3rem;
+    font-family: var(--font);
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    background: var(--bg-soft);
+    border: 1px solid var(--fg-muted);
+    color: var(--fg);
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
+  }
+  .key:hover { border-color: var(--fg); color: var(--fg-bright); }
+  .key-wide {
+    flex: 1.6 1 auto;
+    max-width: 4.5rem;
+    font-size: 0.75rem;
+  }
+
+  .wl-footer {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    min-height: 2rem;
+  }
+  .wl-streak { color: var(--fg); }
+  .wl-share {
+    font-family: var(--font);
+    font-size: 0.9rem;
+    background: transparent;
+    border: 1px solid var(--fg-muted);
+    color: var(--fg-bright);
+    padding: 0.4rem 1.2rem;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .wl-share:hover { background: var(--bg-soft); border-color: var(--fg); }
+
+  @keyframes wl-shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-0.4rem); }
+    40%, 80% { transform: translateX(0.4rem); }
+  }
+  .wl-row.shake { animation: wl-shake 0.35s; }
+
+  @media (max-width: 600px) {
+    .tile {
+      width: 2.7rem;
+      height: 2.7rem;
+      font-size: 1.3rem;
+    }
+    .key {
+      height: 2.7rem;
+      min-width: 1.5rem;
+      font-size: 0.8rem;
+    }
+    .key-wide { font-size: 0.65rem; }
+  }
+</style>
