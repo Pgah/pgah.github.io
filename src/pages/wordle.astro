@@ -107,7 +107,7 @@ const keyRows = [
     for (let c = 0; c < 5; c++) {
       const el = tile(row, c);
       el.textContent = guess[c];
-      el.classList.add('filled');
+      el.classList.remove('filled');
       applyResultClasses(el, result[c]);
       updateKeyState(guess[c], result[c]);
     }
@@ -347,6 +347,14 @@ const keyRows = [
     transition: background 0.1s, color 0.1s, border-color 0.1s;
   }
   .key:hover { border-color: var(--fg); color: var(--fg-bright); }
+
+  /* Keyboard result colours — higher specificity than the base `.key` rule
+     (which is defined after the shared palette) so they actually win.
+     `absent` is darker than an unused key so eliminated letters read as spent. */
+  .key.correct { background: var(--green);      border-color: var(--green);    color: var(--bg); }
+  .key.present { background: var(--fg-bright);   border-color: var(--fg-bright); color: var(--bg); }
+  .key.absent  { background: var(--bg);          border-color: var(--bg-soft);  color: var(--fg-muted); }
+
   .key-wide {
     flex: 1.6 1 auto;
     max-width: 4.5rem;
