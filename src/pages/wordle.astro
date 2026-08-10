@@ -231,6 +231,14 @@ const keyRows = [
   });
 
   restore();
+
+  // Reload at local midnight so the next day's word appears automatically.
+  (function scheduleMidnightReload() {
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    setTimeout(() => location.reload(), msUntilMidnight);
+  })();
 </script>
 
 <style>

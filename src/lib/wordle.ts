@@ -104,10 +104,11 @@ function yesterdayStr(): string {
 }
 
 export function dayIndex(): number {
-  const epoch = new Date('2026-01-01').getTime();
-  const localMidnight = new Date();
-  localMidnight.setHours(0, 0, 0, 0);
-  return Math.max(0, Math.floor((localMidnight.getTime() - epoch) / 86_400_000));
+  const now = new Date();
+  // Use numeric constructor so both dates are in local time — avoids UTC vs local offset bugs.
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const epoch = new Date(2026, 0, 1);
+  return Math.max(0, Math.floor((today.getTime() - epoch.getTime()) / 86_400_000));
 }
 
 export function getDailyWord(): string {
