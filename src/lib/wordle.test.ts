@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   evaluateGuess, isValidGuess, buildShareText, getDailyWord,
-  WORDS, type WordleState,
+  WORDS, getDefinition, type WordleState,
 } from './wordle';
 
 describe('evaluateGuess', () => {
@@ -112,5 +112,24 @@ describe('buildShareText', () => {
       lastWin: '',
     };
     expect(buildShareText(state, 7)).toContain('Security Wordle #7 X/6');
+  });
+});
+
+describe('getDefinition', () => {
+  it('returns a non-empty string for every word in WORDS', () => {
+    for (const word of WORDS) {
+      const def = getDefinition(word);
+      expect(def).not.toBeNull();
+      expect(typeof def).toBe('string');
+      expect((def as string).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('is case-insensitive', () => {
+    expect(getDefinition('proxy')).toBe(getDefinition('PROXY'));
+  });
+
+  it('returns null for an unknown word', () => {
+    expect(getDefinition('ZZZZZ')).toBeNull();
   });
 });
