@@ -38,6 +38,11 @@ const keyRows = [
 
     <div class="wl-msg" id="msg" role="status" aria-live="polite"></div>
 
+    <div class="wl-definition" id="definition" hidden>
+      <strong class="wl-def-word"></strong>
+      <span class="wl-def-text"></span>
+    </div>
+
     <div class="wl-keyboard" id="keyboard">
       {keyRows.map((row) => (
         <div class="kb-row">
@@ -63,7 +68,7 @@ const keyRows = [
   import {
     evaluateGuess, isValidGuess, loadState, saveState,
     getDailyWord, dayIndex, buildShareText, todayStr,
-    type GuessResult, type WordleState,
+    getDefinition, type GuessResult, type WordleState,
   } from '../lib/wordle';
 
   const grid = document.getElementById('grid')!;
@@ -117,6 +122,15 @@ const keyRows = [
     streakEl.textContent = state.streak > 0 ? `seri: ${state.streak} 🔥` : '';
   }
 
+  function showDefinition(): void {
+    const def = getDefinition(target);
+    if (!def) return;
+    const el = document.getElementById('definition')!;
+    el.querySelector('.wl-def-word')!.textContent = target;
+    el.querySelector('.wl-def-text')!.textContent = def;
+    el.hidden = false;
+  }
+
   function finishGame(won: boolean): void {
     if (won) {
       setMsg(`çözüldü — ${state.guesses.length}/6 🎉`);
@@ -125,6 +139,7 @@ const keyRows = [
     }
     renderStreak();
     shareBtn.hidden = false;
+    showDefinition();
   }
 
   function restore(): void {
@@ -325,6 +340,29 @@ const keyRows = [
     min-height: 1.4rem;
     color: var(--fg-bright);
     text-align: center;
+  }
+
+  .wl-definition {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    border: 1px solid var(--fg-muted);
+    padding: 0.75rem 1.25rem;
+    max-width: 28rem;
+    width: 100%;
+  }
+
+  .wl-def-word {
+    color: var(--fg-bright);
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .wl-def-text {
+    color: var(--fg-dim);
+    font-size: 0.85rem;
+    line-height: 1.5;
   }
 
   .wl-keyboard {
