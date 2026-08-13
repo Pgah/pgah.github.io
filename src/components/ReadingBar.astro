@@ -1,0 +1,189 @@
+---
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+---
+
+<div class="reading-bar" id="reading-bar" aria-hidden="true">
+  <div class="reading-bar-inner">
+    <span class="rb-file">cat {slug}.md</span>
+    <span class="rb-section" id="rb-section"></span>
+    <a href="/" class="rb-back">cd ..</a>
+  </div>
+  <div class="rb-progress" id="rb-progress"></div>
+</div>
+
+<button class="to-top" id="to-top" type="button" aria-label="başa dön">↑ top</button>
+
+<script>
+  const bar = document.getElementById('reading-bar');
+  const progress = document.getElementById('rb-progress');
+  const sectionLabel = document.getElementById('rb-section');
+  const toTop = document.getElementById('to-top');
+  const headings = Array.from(document.querySelectorAll('.post-body h2'));
+
+  // Başlık metnini anchor eklemeden önce sakla, sonra tıklanabilir '#'
+  // bağlantısını iliştir. Astro markdown başlıklarına id'yi kendisi üretiyor.
+  Array.from(document.querySelectorAll('.post-body h2[id], .post-body h3[id]')).forEach((h) => {
+    h.dataset.title = h.textContent.trim();
+    const a = document.createElement('a');
+    a.className = 'heading-anchor';
+    a.href = '#' + h.id;
+    a.textContent = '#';
+    a.setAttribute('aria-label', h.dataset.title + ' bölümüne bağlantı');
+    h.appendChild(a);
+  });
+
+  const SHOW_AFTER = 200;
+  let ticking = false;
+
+  const tocLinks = new Map();
+  document.querySelectorAll('.toc-link').forEach((a) => {
+    tocLinks.set(a.getAttribute('href').slice(1), a);
+  });
+  let currentId = null;
+
+  // Üst kenarı viewport'un ilk çeyreğini geçmiş son başlık "okunan bölüm"dür.
+  function syncSection() {
+    const marker = window.innerHeight * 0.25;
+    let active = null;
+    for (const h of headings) {
+      if (h.getBoundingClientRect().top <= marker) active = h;
+    }
+    const id = active ? active.id : null;
+    if (id === currentId) return;
+    currentId = id;
+    sectionLabel.textContent = active ? (active.dataset.title || active.textContent.trim()) : '';
+    tocLinks.forEach((a, key) => a.classList.toggle('toc-active', key === id));
+  }
+
+  function update() {
+    ticking = false;
+    const scrolled = window.scrollY;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = max > 0 ? Math.min(scrolled / max, 1) : 0;
+
+    progress.style.transform = `scaleX(${ratio})`;
+
+    const visible = scrolled > SHOW_AFTER;
+    bar.classList.toggle('is-visible', visible);
+    bar.setAttribute('aria-hidden', String(!visible));
+    toTop.classList.toggle('is-visible', visible);
+
+    if (headings.length) syncSection();
+  }
+
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  update();
+
+  toTop.addEventListener('click', () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
+
+</script>
+
+<style>
+.reading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid var(--fg-muted);
+  opacity: 0;
+  visibility: hidden; /* gizliyken tab sırasından da çıksın */
+  transform: translateY(-100%);
+  transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+}
+.reading-bar.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.reading-bar-inner {
+  max-width: var(--width);
+  margin: 0 auto;
+  padding: 0.5rem 1.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 1.5ch;
+  font-size: 0.85rem;
+}
+.rb-file {
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+.rb-section {
+  color: var(--fg-bright);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-section:not(:empty)::before {
+  content: '# ';
+  color: var(--fg-muted);
+}
+.rb-back {
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+.rb-back:hover {
+  color: var(--fg-bright);
+  text-decoration: none;
+}
+.rb-progress {
+  height: 2px;
+  background: var(--fg-bright);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+.to-top {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 20;
+  background: var(--bg);
+  border: 1px solid var(--fg-muted);
+  color: var(--fg-dim);
+  font-family: var(--font);
+  font-size: 0.8rem;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s, color 0.15s, border-color 0.15s;
+}
+.to-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+.to-top:hover {
+  color: var(--fg-bright);
+  border-color: var(--fg-dim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-bar { transition: none; }
+  .to-top { transition: none; }
+}
+
+@media (max-width: 600px) {
+  .reading-bar-inner { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
+  .rb-file { display: none; }
+  .to-top { right: 0.75rem; bottom: 0.75rem; }
+}
+</style>

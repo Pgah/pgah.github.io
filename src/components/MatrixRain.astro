@@ -89,7 +89,11 @@ function draw() {
   }
 }
 
-setInterval(draw, 40);
+// Sekme arka plandayken tam viewport canvas'ını boyamanın anlamı yok.
+setInterval(() => {
+  if (document.visibilityState === 'hidden') return;
+  draw();
+}, 40);
 </script>
 
 <style>

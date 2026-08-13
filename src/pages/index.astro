@@ -63,10 +63,14 @@ const postsJson = JSON.stringify(posts.map(p => {
 
   <script type="application/json" id="posts-data" set:html={postsJson}></script>
 
-  <div id="terminal-output"></div>
+  <div class="term-dock" id="term-dock">
+    <div class="term-dock-inner">
+      <div id="terminal-output" class="is-empty"></div>
 
-  <div class="cursor-line" id="cursor-line">
-    <span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" />
+      <div class="cursor-line" id="cursor-line">
+        <span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" aria-label="terminal" />
+      </div>
+    </div>
   </div>
 </BaseLayout>
 
@@ -86,6 +90,7 @@ const postsJson = JSON.stringify(posts.map(p => {
   const termInput = document.getElementById('terminal-input');
   const termOutput = document.getElementById('terminal-output');
   const cursorLine = document.getElementById('cursor-line');
+  const termDock = document.getElementById('term-dock');
 
   const rows = Array.from(body.querySelectorAll('.listing-row'));
   rows.forEach((row, i) => {
@@ -140,6 +145,29 @@ const postsJson = JSON.stringify(posts.map(p => {
 
   cursorLine.addEventListener('click', () => termInput.focus());
 
+  // Dock sabit konumlu, yani akıştan çıkıyor. Yüksekliği çıktı biriktikçe
+  // değiştiği için sayfanın alt boşluğunu canlı olarak eşitliyoruz — aksi
+  // halde listenin son satırları dock'un altında kalırdı.
+  const syncDockHeight = () => {
+    document.documentElement.style.setProperty('--dock-h', termDock.offsetHeight + 'px');
+  };
+  syncDockHeight();
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(syncDockHeight).observe(termDock);
+  } else {
+    window.addEventListener('resize', syncDockHeight);
+  }
+
+  // Çıktı kutusu kendi içinde scroll olur; yeni satır her zaman görünsün.
+  function scrollOutputToEnd() {
+    termOutput.scrollTop = termOutput.scrollHeight;
+  }
+
+  function setOutputEmpty(empty) {
+    termOutput.classList.toggle('is-empty', empty);
+    syncDockHeight();
+  }
+
   function esc(s) {
     return String(s)
       .replace(/&/g, '&amp;')
@@ -156,12 +184,15 @@ const postsJson = JSON.stringify(posts.map(p => {
     div.className = 'term-out-line';
     div.innerHTML = html;
     currentGroup.appendChild(div);
+    scrollOutputToEnd();
   }
 
   function newGroup() {
     currentGroup = document.createElement('div');
     currentGroup.className = 'term-group';
     termOutput.appendChild(currentGroup);
+    setOutputEmpty(false);
+    scrollOutputToEnd();
   }
 
   function tagSpan(t) {
@@ -173,7 +204,7 @@ const postsJson = JSON.stringify(posts.map(p => {
     history: cmdHistory,
     addLine,
     navigate: (url) => { window.location.href = url; },
-    clearOutput: () => { termOutput.innerHTML = ''; },
+    clearOutput: () => { termOutput.innerHTML = ''; setOutputEmpty(true); },
     setActiveTag,
     getActiveTag: () => activeTag,
     esc,
@@ -198,6 +229,10 @@ const postsJson = JSON.stringify(posts.map(p => {
   }
 
   termInput.addEventListener('keydown', async (e) => {
+    if (e.key === 'Escape') {
+      termInput.blur();
+      return;
+    }
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       tabCycle = null;
@@ -265,6 +300,7 @@ const postsJson = JSON.stringify(posts.map(p => {
       const msg = err instanceof Error ? err.message : String(err);
       addLine(`<span class="term-err">${esc(name)}: ${esc(msg)}</span>`);
     }
+    scrollOutputToEnd();
   });
 </script>
 
@@ -315,11 +351,44 @@ const postsJson = JSON.stringify(posts.map(p => {
 }
 .tag-chip:hover { color: var(--fg); }
 .tag-chip.tag-active { color: var(--fg-bright); text-decoration: underline; }
+/* Terminal, sayfa ne kadar uzarsa uzasın erişilebilir kalsın diye ekranın
+   altına sabitlendi. Çıktı kendi kutusunda birikir, sayfa scroll'unu
+   etkilemez. */
+.term-dock {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--bg);
+  border-top: 1px solid var(--fg-muted);
+}
+.term-dock-inner {
+  max-width: var(--width);
+  margin: 0 auto;
+  padding: 0.6rem 1.5rem 0.75rem;
+}
+#terminal-output {
+  max-height: 40vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#terminal-output.is-empty {
+  display: none;
+}
+#terminal-output .term-group:first-child {
+  margin-top: 0;
+}
 .cursor-line {
-  margin-top: 1rem;
   display: flex;
   align-items: center;
   gap: 0.5ch;
+  cursor: text;
+}
+#terminal-output:not(.is-empty) + .cursor-line {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--bg-soft);
 }
 .prompt-dim { color: var(--fg-dim); }
 .terminal-input {
@@ -346,6 +415,8 @@ const postsJson = JSON.stringify(posts.map(p => {
 .man-name { color: var(--fg-bright); font-size: 1.05em; }
 
 @media (max-width: 600px) {
+  .term-dock-inner { padding: 0.5rem 0.75rem 0.6rem; }
+  #terminal-output { max-height: 50vh; }
   .listing-header { display: none; }
   .listing-row {
     grid-template-columns: 1fr;
