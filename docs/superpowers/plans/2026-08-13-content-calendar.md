@@ -16,7 +16,7 @@ Frontmatter şeması (`src/content.config.ts`): `title`, `date` (bare YYYY-MM-DD
 
 | # | Tarih | Başlık | Seri | Bağlandığı makaleler | Önerilen tag'ler |
 |---|-------|--------|------|----------------------|-------------------|
-| 1 | 2026-08-14 | How IPv6 Works | Networking | how-nat-works, how-tcp-ip-works | ipv6, networking, ip, fundamentals |
+| 1 | 2026-08-14 | How IPv6 Works ✅ yayında | Networking | how-nat-works, how-tcp-ip-works | ipv6, networking, ip, fundamentals |
 | 2 | 2026-08-17 | Linux Networking: iptables & netfilter | Linux | how-nat-works, the-architecture-of-linux | linux, networking, iptables, security |
 | 3 | 2026-08-20 | How Git Works: Objects, Refs, and the DAG | Git (yeni seri) | — (yeni seri açılışı) | git, fundamentals, version-control |
 | 4 | 2026-08-23 | How Databases Work | Web/Backend (yeni seri) | — (yeni seri açılışı) | databases, backend, fundamentals |
