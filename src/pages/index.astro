@@ -31,7 +31,7 @@ const postsJson = JSON.stringify(posts.map(p => {
 
 <BaseLayout title="blogs">
   <div class="cursor-line" id="cursor-line">
-    <span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" aria-label="terminal" />
+    <span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<span class="input-wrap"><input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" aria-label="terminal" /><span class="term-caret" id="term-caret" aria-hidden="true"></span></span>
   </div>
 
   <div id="terminal-output"></div>
@@ -235,6 +235,25 @@ const postsJson = JSON.stringify(posts.map(p => {
   });
 
   cursorLine.addEventListener('click', () => termInput.focus());
+
+  // Yanıp sönen imleç. Giriş kutusunun genişliğini yazdığın kadar tutup
+  // hemen ardına çiziyoruz — font monospace olduğu için 1 karakter = 1ch.
+  // İmleci metnin ortasına taşırsan (ok tuşu, tıklama) kendi imlecimiz
+  // yanlış yerde kalacağı için gizlenip tarayıcınınki devreye giriyor.
+  const termCaret = document.getElementById('term-caret');
+
+  function syncCaret() {
+    termInput.style.width = termInput.value.length + 'ch';
+    const atEnd = termInput.selectionStart === termInput.value.length
+      && termInput.selectionEnd === termInput.value.length;
+    termCaret.hidden = !atEnd;
+    termInput.style.caretColor = atEnd ? 'transparent' : '';
+  }
+
+  ['input', 'keyup', 'click', 'focus', 'blur', 'select'].forEach(evt => {
+    termInput.addEventListener(evt, syncCaret);
+  });
+  syncCaret();
 
   function esc(s) {
     return String(s)
@@ -469,6 +488,13 @@ const postsJson = JSON.stringify(posts.map(p => {
   padding: 0 0.25ch;
 }
 .prompt-dim { color: var(--fg-dim); }
+
+.input-wrap {
+  display: inline-flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
 .terminal-input {
   background: transparent;
   border: none;
@@ -477,8 +503,23 @@ const postsJson = JSON.stringify(posts.map(p => {
   font-family: var(--font);
   font-size: inherit;
   caret-color: var(--fg-bright);
-  flex: 1;
-  min-width: 0;
+  width: 0;
+  max-width: 100%;
+  padding: 0;
+}
+
+/* Terminal olduğu belli olsun diye duran, yanıp sönen sarı dik çizgi. */
+.term-caret {
+  flex: none;
+  width: 2px;
+  height: 1.15em;
+  background: var(--fg-bright);
+  animation: blink 1s step-end infinite;
+}
+.term-caret[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .term-caret { animation: none; }
 }
 /* Terminal çıktısının tamamı JS ile üretildiği için burada da :global()
    gerekiyor; kapsam sunucudan gelen #terminal-output ile sınırlı. */
