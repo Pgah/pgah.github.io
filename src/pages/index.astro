@@ -3,8 +3,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Prompt from '../components/Prompt.astro';
 import { getCollection } from 'astro:content';
 
+const PAGE_SIZE = 7;
+
 const posts = (await getCollection('posts', ({ data }) => !data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// İlk (filtresiz) görünümün sayfa numaraları sunucuda üretiliyor ki açılışta
+// numaralar sonradan belirip düzeni oynatmasın. 7'den fazla sayfa olursa
+// pencereleme gerekiyor, onu istemci tarafı devralıyor.
+const pageCount = Math.max(1, Math.ceil(posts.length / PAGE_SIZE));
+const initialPages = pageCount <= 7
+  ? Array.from({ length: pageCount }, (_, i) => i + 1)
+  : [];
 
 const postsJson = JSON.stringify(posts.map(p => {
   const d = p.data.date;
@@ -20,6 +30,14 @@ const postsJson = JSON.stringify(posts.map(p => {
 ---
 
 <BaseLayout title="blogs">
+  <div class="cursor-line" id="cursor-line">
+    <span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" aria-label="terminal" />
+  </div>
+
+  <div id="terminal-output"></div>
+
+  <hr />
+
   <Prompt command="ls -la ~/blogs" />
 
   <div class="listing">
@@ -30,11 +48,11 @@ const postsJson = JSON.stringify(posts.map(p => {
     </div>
 
     <div id="listing-body">
-      {posts.map((post) => {
+      {posts.map((post, i) => {
         const d = post.data.date;
         const dateStr = `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${d.getUTCFullYear()}`;
         return (
-          <div class="listing-row">
+          <div class="listing-row" style={i >= PAGE_SIZE ? 'display:none' : undefined}>
             <span class="col-perm perm">-rw-r--r--</span>
             <span class="col-date date">{dateStr}</span>
             <div class="col-name-wrap">
@@ -61,22 +79,30 @@ const postsJson = JSON.stringify(posts.map(p => {
     )}
   </div>
 
-  <script type="application/json" id="posts-data" set:html={postsJson}></script>
-
-  <div id="terminal-output"></div>
-
-  <div class="cursor-line" id="cursor-line">
-    <span class="prompt-dim">sleeper@matrix:~/blogs$</span>&nbsp;<input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" />
+  <div class="pager" id="pager" hidden={posts.length <= PAGE_SIZE}>
+    <span class="pager-pages" id="pager-pages">
+      {initialPages.map((n) => (
+        <button
+          class={n === 1 ? 'pager-num pager-num-active' : 'pager-num'}
+          data-page={n - 1}
+          type="button"
+        >{n}</button>
+      ))}
+    </span>
   </div>
+
+  <script type="application/json" id="posts-data" set:html={postsJson}></script>
 </BaseLayout>
 
 <script>
   import { findCommand, commandNames, type CommandCtx } from '../lib/commands';
 
   const posts = JSON.parse(document.getElementById('posts-data').textContent);
+  const PAGE_SIZE = 7;
   let sortKey = 'date';
   let sortDir = -1;
   let activeTag = null;
+  let page = 0;
   const cmdHistory = [];
   let historyIndex = -1;
 
@@ -86,6 +112,8 @@ const postsJson = JSON.stringify(posts.map(p => {
   const termInput = document.getElementById('terminal-input');
   const termOutput = document.getElementById('terminal-output');
   const cursorLine = document.getElementById('cursor-line');
+  const pager = document.getElementById('pager');
+  const pagerPages = document.getElementById('pager-pages');
 
   const rows = Array.from(body.querySelectorAll('.listing-row'));
   rows.forEach((row, i) => {
@@ -100,10 +128,50 @@ const postsJson = JSON.stringify(posts.map(p => {
 
   function setActiveTag(tag) {
     activeTag = tag;
+    page = 0;
     document.querySelectorAll('.tag-chip').forEach(c => {
       c.classList.toggle('tag-active', c.dataset.tag === tag);
     });
     render();
+  }
+
+  // Sayfa sayısı büyüdükçe hepsini yan yana dizmek yerine pencereliyoruz:
+  // ilk, son, bulunduğun sayfa ve komşuları — aradaki boşluklar '…' oluyor.
+  function pageWindow(current, count) {
+    if (count <= 7) return Array.from({ length: count }, (_, i) => i + 1);
+    const picked = [1, count, current, current - 1, current + 1]
+      .filter(n => n >= 1 && n <= count)
+      .sort((a, b) => a - b);
+
+    const out = [];
+    let prev = 0;
+    for (const n of picked) {
+      if (n === prev) continue;
+      if (prev && n - prev > 1) out.push('…');
+      out.push(n);
+      prev = n;
+    }
+    return out;
+  }
+
+  function renderPageNumbers(pageCount) {
+    pagerPages.textContent = '';
+    for (const entry of pageWindow(page + 1, pageCount)) {
+      if (entry === '…') {
+        const gap = document.createElement('span');
+        gap.className = 'pager-gap';
+        gap.textContent = '…';
+        pagerPages.appendChild(gap);
+        continue;
+      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = entry === page + 1 ? 'pager-num pager-num-active' : 'pager-num';
+      btn.dataset.page = String(entry - 1);
+      btn.textContent = String(entry);
+      if (entry === page + 1) btn.setAttribute('aria-current', 'page');
+      pagerPages.appendChild(btn);
+    }
   }
 
   function render() {
@@ -111,26 +179,54 @@ const postsJson = JSON.stringify(posts.map(p => {
       if (sortKey === 'date') return (Number(a.dataset.date) - Number(b.dataset.date)) * sortDir;
       return thirdWord(a.dataset.id).localeCompare(thirdWord(b.dataset.id)) * sortDir;
     });
-    sorted.forEach(row => {
+
+    // Etiket filtresinden geçenler; sayfalama bu küme üzerinden yürüyor.
+    const matching = sorted.filter(row => {
       const tags = row.dataset.tags ? row.dataset.tags.split(',') : [];
-      row.style.display = (!activeTag || tags.includes(activeTag)) ? '' : 'none';
+      return !activeTag || tags.includes(activeTag);
+    });
+
+    const pageCount = Math.max(1, Math.ceil(matching.length / PAGE_SIZE));
+    page = Math.min(Math.max(page, 0), pageCount - 1);
+
+    const start = page * PAGE_SIZE;
+    const shown = new Set(matching.slice(start, start + PAGE_SIZE));
+
+    sorted.forEach(row => {
+      row.style.display = shown.has(row) ? '' : 'none';
       body.appendChild(row);
     });
+
+    pager.hidden = matching.length <= PAGE_SIZE;
+    renderPageNumbers(pageCount);
+
     btnDate.querySelector('.sort-arrow').textContent = sortKey === 'date' ? (sortDir === -1 ? '↓' : '↑') : '';
     btnName.querySelector('.sort-arrow').textContent = sortKey === 'name' ? (sortDir === -1 ? '↓' : '↑') : '';
   }
 
+  pagerPages.addEventListener('click', (e) => {
+    const btn = e.target.closest('.pager-num');
+    if (!btn) return;
+    page = Number(btn.dataset.page);
+    render();
+  });
+
   btnDate.addEventListener('click', () => {
     if (sortKey === 'date') sortDir *= -1;
     else { sortKey = 'date'; sortDir = -1; }
+    page = 0;
     render();
   });
 
   btnName.addEventListener('click', () => {
     if (sortKey === 'name') sortDir *= -1;
     else { sortKey = 'name'; sortDir = 1; }
+    page = 0;
     render();
   });
+
+  // Sunucudan tüm satırlar geliyor; ilk sayfayı burada kırpıyoruz.
+  render();
 
   body.addEventListener('click', (e) => {
     const chip = e.target.closest('.tag-chip');
@@ -315,11 +411,62 @@ const postsJson = JSON.stringify(posts.map(p => {
 }
 .tag-chip:hover { color: var(--fg); }
 .tag-chip.tag-active { color: var(--fg-bright); text-decoration: underline; }
+/* Terminal sayfanın en üstünde; çıktı hemen altında birikir, böylece
+   giriş satırı hiç yer değiştirmez. */
 .cursor-line {
-  margin-top: 1rem;
   display: flex;
   align-items: center;
   gap: 0.5ch;
+  cursor: text;
+}
+#terminal-output:not(:empty) {
+  margin-top: 0.5rem;
+}
+
+.pager {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--fg-muted);
+  font-size: 0.9rem;
+}
+.pager[hidden] { display: none; }
+
+.pager-pages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5ch;
+}
+
+/* Numaralar temanın kendi değişkenlerinden besleniyor, böylece `theme`
+   komutuyla altın/matrix/amber arasında geçince de uyumlu kalıyorlar. */
+/* Numaralar JS ile üretiliyor, yani Astro'nun scope attribute'unu almıyorlar.
+   Bu yüzden :global() ile eşleşiyoruz — kapsam yine sunucudan gelen
+   .pager-pages ile sınırlı kaldığı için stil dışarı sızmıyor. */
+.pager-pages :global(.pager-num) {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: inherit;
+  line-height: inherit;
+  color: var(--fg-dim);
+  padding: 0 0.75ch;
+  transition: color 0.15s;
+}
+.pager-pages :global(.pager-num:hover) {
+  color: var(--fg-bright);
+}
+.pager-pages :global(.pager-num-active) {
+  color: var(--fg-bright);
+  text-decoration: underline;
+}
+.pager-pages :global(.pager-gap) {
+  color: var(--fg-muted);
+  padding: 0 0.25ch;
 }
 .prompt-dim { color: var(--fg-dim); }
 .terminal-input {
@@ -333,17 +480,20 @@ const postsJson = JSON.stringify(posts.map(p => {
   flex: 1;
   min-width: 0;
 }
-.term-group { margin-top: 1.5rem; }
-.term-out-line { margin-top: 0.25rem; font-size: inherit; }
-.term-cmd { color: var(--fg-bright); }
-.term-err { color: #e05252; }
-.term-dim { color: var(--fg-dim); }
-.term-desc { color: var(--fg-muted); font-size: 0.9em; }
-.term-link { color: var(--fg-bright); }
-.term-link:hover { text-decoration: underline; color: #fff; }
-.term-tag { color: var(--fg-muted); font-size: 0.85em; }
-.man-section { color: var(--fg-bright); }
-.man-name { color: var(--fg-bright); font-size: 1.05em; }
+/* Terminal çıktısının tamamı JS ile üretildiği için burada da :global()
+   gerekiyor; kapsam sunucudan gelen #terminal-output ile sınırlı. */
+#terminal-output :global(.term-group) { margin-top: 1.5rem; }
+#terminal-output :global(.term-out-line) { margin-top: 0.25rem; font-size: inherit; }
+#terminal-output :global(.prompt-dim) { color: var(--fg-dim); }
+#terminal-output :global(.term-cmd) { color: var(--fg-bright); }
+#terminal-output :global(.term-err) { color: #e05252; }
+#terminal-output :global(.term-dim) { color: var(--fg-dim); }
+#terminal-output :global(.term-desc) { color: var(--fg-muted); font-size: 0.9em; }
+#terminal-output :global(.term-link) { color: var(--fg-bright); }
+#terminal-output :global(.term-link:hover) { text-decoration: underline; color: #fff; }
+#terminal-output :global(.term-tag) { color: var(--fg-muted); font-size: 0.85em; }
+#terminal-output :global(.man-section) { color: var(--fg-bright); }
+#terminal-output :global(.man-name) { color: var(--fg-bright); font-size: 1.05em; }
 
 @media (max-width: 600px) {
   .listing-header { display: none; }
