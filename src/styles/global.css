@@ -52,25 +52,19 @@ html {
   font-size: 15px;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
-  scroll-behavior: smooth;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-}
-
-/* --dock-h: ana sayfadaki sabit terminal barının yüksekliği, ResizeObserver
-   ile canlı yazılır. Diğer sayfalarda 0px kalır. */
 body {
   min-height: 100vh;
-  padding: 2rem 1.5rem calc(4rem + var(--dock-h, 0px));
+  padding: 2rem 1.5rem 4rem;
 }
 
 main {
   max-width: var(--width);
   margin: 0 auto;
-  background: rgba(14, 9, 0, 0.85);
+  background: rgba(14, 9, 0, 0.75);
   padding: 1.5rem;
+  backdrop-filter: blur(1px);
 }
 
 a {
@@ -136,68 +130,6 @@ hr {
   margin: 2rem 0;
 }
 
-/* ── Makale gövdesi ─────────────────────────────────────────────────────
-   Bu kurallar yalnızca .post-body altında geçerli. Global h1/h2/h3 ve p
-   kuralları nav, about ve wordle tarafından da kullanıldığı için onlara
-   dokunulmuyor. */
-
-.post-body h2,
-.post-body h3 {
-  scroll-margin-top: 4.5rem; /* yapışkan bar anchor hedefini örtmesin */
-}
-
-.post-body h2 {
-  font-size: 1.25rem;
-  margin: 2.75rem 0 0.75rem;
-}
-
-.post-body h2::before {
-  content: '## ';
-  color: var(--fg-muted);
-}
-
-.post-body h3 {
-  font-size: 1.05rem;
-  margin: 2rem 0 0.5rem;
-}
-
-.post-body h3::before {
-  content: '### ';
-  color: var(--fg-muted);
-}
-
-.post-body > h2:first-child,
-.post-body > h3:first-child {
-  margin-top: 0;
-}
-
-.post-body p {
-  margin-bottom: 1.15rem;
-  max-width: 68ch;
-}
-
-.post-body ul,
-.post-body ol {
-  max-width: 68ch;
-}
-
-/* Başlık üstüne gelince beliren anchor işareti */
-.post-body h2 .heading-anchor,
-.post-body h3 .heading-anchor {
-  color: var(--fg-muted);
-  opacity: 0;
-  padding-left: 0.75ch;
-  transition: opacity 0.15s;
-}
-
-.post-body h2:hover .heading-anchor,
-.post-body h3:hover .heading-anchor,
-.post-body h2 .heading-anchor:focus-visible,
-.post-body h3 .heading-anchor:focus-visible {
-  opacity: 1;
-  text-decoration: none;
-}
-
 ::selection {
   background: var(--fg);
   color: var(--bg);
@@ -211,14 +143,12 @@ hr {
 
 @media (max-width: 600px) {
   body {
-    padding: 1rem 0.75rem calc(3rem + var(--dock-h, 0px));
+    padding: 1rem 0.75rem 3rem;
   }
 
   main {
     padding: 1rem;
   }
-
-  .post-body h2 { font-size: 1.15rem; margin-top: 2.25rem; }
 }
 
 @keyframes blink {

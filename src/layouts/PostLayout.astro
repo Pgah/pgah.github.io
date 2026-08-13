@@ -1,34 +1,24 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import Prompt from '../components/Prompt.astro';
-import ReadingBar from '../components/ReadingBar.astro';
-
-interface Heading {
-  depth: number;
-  slug: string;
-  text: string;
-}
 
 interface Props {
   title: string;
   date: Date;
   description: string;
   tags: string[];
-  headings?: Heading[];
 }
 
-const { title, date, description, tags, headings = [] } = Astro.props;
+const { title, date, description, tags } = Astro.props;
 const slug = Astro.url.pathname.replace('/posts/', '').replace(/\/$/, '').replace(/\/$/, '');
 const dateStr = date.toISOString().split('T')[0];
-const sections = headings.filter((h) => h.depth === 2);
 ---
 
 <BaseLayout title={title} description={description} ogType="article">
   <Prompt path="~/posts" command={`cat ${slug}.md`} />
 
-  <h1 class="post-title">{title}</h1>
-
   <div class="post-meta">
+    <span class="meta-comment"># {title}</span>
     <span class="meta-comment"># date: {dateStr}</span>
     {tags.length > 0 && (
       <span class="meta-comment"># tags: {tags.join(', ')}</span>
@@ -37,39 +27,16 @@ const sections = headings.filter((h) => h.depth === 2);
 
   <hr />
 
-  {sections.length > 1 && (
-    <details class="toc" open>
-      <summary class="toc-summary">
-        <span class="toc-prompt">$</span> grep '^## ' {slug}.md
-      </summary>
-      <ol class="toc-list">
-        {sections.map((h) => (
-          <li>
-            <a class="toc-link" href={`#${h.slug}`}>{h.text}</a>
-          </li>
-        ))}
-      </ol>
-    </details>
-  )}
-
-  <article class="post-body">
+  <article>
     <slot />
   </article>
 
   <hr />
 
   <a href="/" class="back">cd ..</a>
-
-  <ReadingBar slug={slug} />
 </BaseLayout>
 
 <style>
-.post-title {
-  font-size: 1.5rem;
-  color: var(--fg-bright);
-  margin: 0.5rem 0 0.75rem;
-  line-height: 1.35;
-}
 .post-meta {
   display: flex;
   flex-direction: column;
@@ -80,44 +47,6 @@ const sections = headings.filter((h) => h.depth === 2);
   color: var(--fg-dim);
   font-size: 0.9rem;
 }
-
-.toc {
-  margin-bottom: 2rem;
-  font-size: 0.9rem;
-}
-.toc-summary {
-  cursor: pointer;
-  color: var(--fg-dim);
-  list-style: none;
-  user-select: none;
-}
-.toc-summary::-webkit-details-marker { display: none; }
-.toc-summary:hover { color: var(--fg); }
-.toc-prompt { color: var(--fg-muted); }
-.toc-list {
-  list-style: none;
-  padding: 0;
-  margin: 0.5rem 0 0;
-  counter-reset: toc;
-}
-.toc-list li {
-  margin-bottom: 0.1rem;
-  counter-increment: toc;
-}
-.toc-list li::before {
-  content: counter(toc, decimal-leading-zero) '  ';
-  color: var(--fg-muted);
-}
-.toc-link { color: var(--fg-dim); }
-.toc-link:hover { color: var(--fg-bright); }
-.toc-link.toc-active {
-  color: var(--fg-bright);
-}
-.toc-link.toc-active::after {
-  content: '  ←';
-  color: var(--fg-muted);
-}
-
 .back {
   display: inline-block;
   margin-top: 1rem;
@@ -126,9 +55,5 @@ const sections = headings.filter((h) => h.depth === 2);
 .back:hover {
   color: var(--fg-bright);
   text-decoration: none;
-}
-
-@media (max-width: 600px) {
-  .post-title { font-size: 1.3rem; }
 }
 </style>
