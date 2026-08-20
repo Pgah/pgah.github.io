@@ -18,7 +18,7 @@ Frontmatter şeması (`src/content.config.ts`): `title`, `date` (bare YYYY-MM-DD
 |---|-------|--------|------|----------------------|-------------------|
 | 1 | 2026-08-14 | How IPv6 Works ✅ yayında | Networking | how-nat-works, how-tcp-ip-works | ipv6, networking, ip, fundamentals |
 | 2 | 2026-08-17 | Linux Networking: iptables & netfilter ✅ yayında | Linux | how-nat-works, the-architecture-of-linux | linux, networking, iptables, security |
-| 3 | 2026-08-20 | How Git Works: Objects, Refs, and the DAG | Git (yeni seri) | — (yeni seri açılışı) | git, fundamentals, version-control |
+| 3 | 2026-08-20 | How Git Works: Objects, Refs, and the DAG ✅ yayında | Git (yeni seri) | — (yeni seri açılışı) | git, fundamentals, version-control |
 | 4 | 2026-08-23 | How Databases Work | Web/Backend (yeni seri) | — (yeni seri açılışı) | databases, backend, fundamentals |
 | 5 | 2026-08-26 | Linux Filesystems: ext4 and the Inode Model | Linux | the-architecture-of-linux, linux-file-permissions | linux, filesystems, fundamentals |
 | 6 | 2026-08-29 | How Certificates & PKI Work | Networking/Crypto | how-tls-works, how-ssh-works | pki, certificates, cryptography, tls |
