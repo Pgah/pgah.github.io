@@ -1,97 +1,76 @@
-// Daily Security Wordle — word list, game logic, and localStorage state.
+# Wordle Word Definitions Implementation Plan
 
-export type GuessResult = 'correct' | 'present' | 'absent';
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-export interface WordleState {
-  date: string;
-  guesses: string[];
-  results: GuessResult[][];
-  solved: boolean;
-  failed: boolean;
-  hintUsed: boolean;
-  streak: number;
-  lastWin: string;
-}
+**Goal:** Show the English definition of the day's word when the player finishes a Wordle game (win or loss).
 
-export const WORDS: readonly string[] = [
-  'CRACK', 'PROXY', 'TOKEN', 'PATCH', 'FLOOD',
-  'SPOOF', 'SNIFF', 'NONCE', 'CRYPT', 'BLOCK',
-  'CHAIN', 'SHELL', 'PIVOT', 'AUDIT', 'VIRUS',
-  'WORMS', 'STACK', 'IPSEC', 'ADMIN', 'AGENT',
-  'ALERT', 'ASSET', 'BRUTE', 'CACHE', 'CREDS',
-  'CYBER', 'DEBUG', 'DECOY', 'EPOCH', 'ERROR',
-  'EVADE', 'EXFIL', 'FAULT', 'FORGE', 'FRAME',
-  'GHOST', 'GROUP', 'GUARD', 'HEIST', 'HOOKS',
-  'HYDRA', 'IMAGE', 'INPUT', 'LOGIN', 'MACRO',
-  'MITRE', 'MUTEX', 'NODES', 'NOISE', 'OAUTH',
-  'OWNER', 'PANIC', 'PARSE', 'PERMS', 'PHISH',
-  'PLAIN', 'PORTS', 'POWER', 'PRIME', 'PROBE',
-  'QUEUE', 'RECON', 'RELAY', 'RESET', 'ROGUE',
-  'ROOTS', 'ROUTE', 'RULES', 'SCOPE', 'SIGMA',
-  'SOCKS', 'SPAWN', 'SPRAY', 'STAGE', 'STATE',
-  'STEAL', 'STDIN', 'TRACK', 'TRACE', 'TRUST',
-  'UNION', 'USERS', 'VAULT', 'VENOM', 'VHOST',
-  'XPATH', 'LINUX', 'GRANT', 'MOUNT', 'BREAK',
-  'LAYER', 'REALM', 'LOGIC', 'EMBED', 'FETCH',
-  'FIELD', 'RANGE', 'TRAIL', 'TRAPS', 'LOCAL',
-  'MODEL', 'MODES', 'KNOWN', 'CLOSE', 'CHECK',
-  'LEARN', 'CLONE', 'DEPTH', 'DRAIN', 'TRADE',
-  'MIMIC', 'SPEAR', 'SNARE', 'ARMOR', 'BYTES',
-  'CLOUD', 'CRAFT', 'CYCLE', 'DELTA', 'DRAFT',
-  'ENTRY', 'ENVOY', 'EJECT', 'ELUDE', 'QUOTA',
-  'SEIZE', 'VIGOR', 'WIPES', 'BLUFF', 'LOOPS',
-  'CHMOD', 'CHOWN', 'CNAME', 'UNAME', 'UMASK',
-  'INODE', 'STEGO', 'POSIX', 'ABUSE', 'DUMPS',
-  'LOCKS', 'DROPS', 'EMAIL', 'PAGES', 'PIXEL',
-  'SNORT', 'ENCAP', 'SWEEP', 'FUZZY', 'EAVES',
-  // General 5-letter English words extending the daily cycle to a full year (365 total).
-  'ABORT', 'ABOVE', 'ACTOR', 'ADAPT', 'ADEPT',
-  'ADOPT', 'AGILE', 'ALARM', 'ALIAS', 'ALIGN',
-  'ALLOW', 'ALPHA', 'AMEND', 'ANGLE', 'ARENA',
-  'ARGUE', 'ARRAY', 'ARROW', 'ASIDE', 'ATLAS',
-  'AUDIO', 'AVOID', 'AWAIT', 'AWARD', 'AWARE',
-  'BADGE', 'BASIC', 'BATCH', 'BEACH', 'BEGIN',
-  'BENCH', 'BLADE', 'BLAME', 'BLANK', 'BLAST',
-  'BLAZE', 'BLEND', 'BLIND', 'BLINK', 'BLOOM',
-  'BOARD', 'BONUS', 'BOOST', 'BOOTH', 'BOUND',
-  'BRAIN', 'BRAND', 'BRAVE', 'BRICK', 'BRIEF',
-  'BRING', 'BROAD', 'BRUSH', 'BUILD', 'BUILT',
-  'BURST', 'BUYER', 'CABLE', 'CARGO', 'CARRY',
-  'CATCH', 'CAUSE', 'CEASE', 'CHARM', 'CHART',
-  'CHASE', 'CHEAT', 'CHESS', 'CHEST', 'CHIEF',
-  'CHILD', 'CHUNK', 'CIVIC', 'CIVIL', 'CLAIM',
-  'CLAMP', 'CLASH', 'CLASS', 'CLEAN', 'CLEAR',
-  'CLERK', 'CLICK', 'CLIMB', 'CLING', 'CLOCK',
-  'COAST', 'COLON', 'COLOR', 'COMET', 'COUNT',
-  'COURT', 'COVER', 'CRANE', 'CRASH', 'CRAWL',
-  'CREAM', 'CREST', 'CRIME', 'CRISP', 'CROSS',
-  'CROWD', 'CROWN', 'CRUSH', 'CURVE', 'DAILY',
-  'DANCE', 'DEALT', 'DEBIT', 'DECAY', 'DELAY',
-  'DENSE', 'DEPOT', 'DETER', 'DEVIL', 'DIARY',
-  'DIGIT', 'DIODE', 'DIRTY', 'DITCH', 'DODGE',
-  'DONOR', 'DOUBT', 'DOZEN', 'DRAMA', 'DRAWN',
-  'DREAM', 'DRESS', 'DRIFT', 'DRILL', 'DRINK',
-  'DRIVE', 'DROVE', 'DROWN', 'DUSTY', 'DWELL',
-  'EAGER', 'EAGLE', 'EARLY', 'EARTH', 'EIGHT',
-  'ELBOW', 'ELDER', 'ELECT', 'ELITE', 'EMPTY',
-  'ENACT', 'ENEMY', 'ENJOY', 'ENTER', 'EQUAL',
-  'EQUIP', 'ERASE', 'ESSAY', 'EVENT', 'EVERY',
-  'EXACT', 'EXCEL', 'EXIST', 'EXPEL', 'EXTRA',
-  'FABLE', 'FAINT', 'FAITH', 'FANCY', 'FATAL',
-  'FAVOR', 'FEAST', 'FENCE', 'FEVER', 'FIBER',
-  'FIGHT', 'FINAL', 'FIRST', 'FIXED', 'FLAME',
-  'FLANK', 'FLASH', 'FLASK', 'FLEET', 'FLESH',
-  'FLICK', 'FLING', 'FLINT', 'FLOAT', 'FLOCK',
-  'FLOOR', 'FLUID', 'FLUSH', 'FLUTE', 'FOCAL',
-  'FOCUS', 'FORCE', 'FORTH', 'FORTY', 'FORUM',
-  'FOUND', 'FRAUD', 'FRESH', 'FRONT', 'FROST',
-  'FROZE', 'FRUIT', 'FULLY', 'FUNDS', 'FUNNY',
-  'GAMER', 'GAUGE', 'GAVEL', 'GENIE', 'GENRE',
-  'GIANT', 'GLAND', 'GLARE', 'GLASS', 'GLEAM',
-] as const;
+**Architecture:** Add a `DEFINITIONS` record and `getDefinition()` export to `wordle.ts`. In `wordle.astro`, add a hidden `.wl-definition` card to the DOM and call `showDefinition()` inside `finishGame()`.
 
-const WORD_SET = new Set<string>(WORDS);
+**Tech Stack:** TypeScript, Astro, Vitest
 
+## Global Constraints
+
+- All 365 words in `WORDS` must have an entry in `DEFINITIONS`.
+- Keys in `DEFINITIONS` are uppercase strings matching the `WORDS` entries exactly.
+- `getDefinition` returns `null` for any word not found — the card stays hidden.
+- No external API calls — all definitions are bundled at build time.
+- Definition card is shown on both win and loss.
+- Styling uses existing CSS custom properties (`var(--fg-bright)`, `var(--fg-muted)`, `var(--fg-dim)`, `var(--bg-soft)`).
+
+---
+
+### Task 1: Add DEFINITIONS and getDefinition() to wordle.ts
+
+**Files:**
+- Modify: `src/lib/wordle.ts` (append after the `WORD_SET` declaration)
+- Modify: `src/lib/wordle.test.ts` (add `getDefinition` import and tests)
+
+**Interfaces:**
+- Produces: `export function getDefinition(word: string): string | null`
+
+- [ ] **Step 1: Write the failing tests**
+
+Add these tests to `src/lib/wordle.test.ts`:
+
+```typescript
+import {
+  evaluateGuess, isValidGuess, buildShareText, getDailyWord,
+  WORDS, getDefinition, type WordleState,
+} from './wordle';
+
+describe('getDefinition', () => {
+  it('returns a non-empty string for every word in WORDS', () => {
+    for (const word of WORDS) {
+      const def = getDefinition(word);
+      expect(def).not.toBeNull();
+      expect(typeof def).toBe('string');
+      expect((def as string).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('is case-insensitive', () => {
+    expect(getDefinition('proxy')).toBe(getDefinition('PROXY'));
+  });
+
+  it('returns null for an unknown word', () => {
+    expect(getDefinition('ZZZZZ')).toBeNull();
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+```
+npx vitest run src/lib/wordle.test.ts
+```
+
+Expected: FAIL — `getDefinition is not a function` or similar.
+
+- [ ] **Step 3: Add DEFINITIONS and getDefinition() to wordle.ts**
+
+Append the following after the `const WORD_SET = new Set<string>(WORDS);` line in `src/lib/wordle.ts`:
+
+```typescript
 export const DEFINITIONS: Readonly<Record<string, string>> = {
   CRACK: 'To break a cipher, password, or protection mechanism through analysis or brute force.',
   PROXY: 'A server that acts as an intermediary between a client and another server, masking the origin IP.',
@@ -463,125 +442,182 @@ export const DEFINITIONS: Readonly<Record<string, string>> = {
 export function getDefinition(word: string): string | null {
   return DEFINITIONS[word.toUpperCase()] ?? null;
 }
+```
 
-export function todayStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+- [ ] **Step 4: Run tests to verify they pass**
 
-function yesterdayStr(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+```
+npx vitest run src/lib/wordle.test.ts
+```
 
-export function dayIndex(): number {
-  const now = new Date();
-  // Use numeric constructor so both dates are in local time — avoids UTC vs local offset bugs.
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const epoch = new Date(2026, 0, 1);
-  return Math.max(0, Math.floor((today.getTime() - epoch.getTime()) / 86_400_000));
-}
+Expected: all tests PASS including the three new `getDefinition` tests.
 
-// WORDS is alphabetically grouped, so picking it in order would surface runs of
-// similar words on consecutive days (e.g. CLICK, CLIMB, CLING, CLOCK back to back).
-// Shuffle the index order once, deterministically, so the daily sequence looks
-// random while still being identical for every visitor on a given day.
-function seededShuffleIndices(length: number, seed: number): number[] {
-  const indices = Array.from({ length }, (_, i) => i);
-  let s = seed;
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/lib/wordle.ts src/lib/wordle.test.ts
+git commit -m "feat: add word definitions and getDefinition() to wordle.ts"
+```
+
+---
+
+### Task 2: Add definition card UI to wordle.astro
+
+**Files:**
+- Modify: `src/pages/wordle.astro`
+
+**Interfaces:**
+- Consumes: `getDefinition(word: string): string | null` from `../lib/wordle`
+
+- [ ] **Step 1: Add getDefinition to the import in wordle.astro**
+
+In `src/pages/wordle.astro`, find the import line:
+
+```typescript
+import {
+  evaluateGuess, isValidGuess, loadState, saveState,
+  getDailyWord, dayIndex, buildShareText, todayStr,
+  type GuessResult, type WordleState,
+} from '../lib/wordle';
+```
+
+Replace it with:
+
+```typescript
+import {
+  evaluateGuess, isValidGuess, loadState, saveState,
+  getDailyWord, dayIndex, buildShareText, todayStr,
+  getDefinition, type GuessResult, type WordleState,
+} from '../lib/wordle';
+```
+
+- [ ] **Step 2: Add the definition card element to the HTML**
+
+In `src/pages/wordle.astro`, find the `<div class="wl-msg" ...>` element:
+
+```html
+<div class="wl-msg" id="msg" role="status" aria-live="polite"></div>
+```
+
+Add the definition card immediately after it:
+
+```html
+<div class="wl-msg" id="msg" role="status" aria-live="polite"></div>
+
+<div class="wl-definition" id="definition" hidden>
+  <strong class="wl-def-word"></strong>
+  <span class="wl-def-text"></span>
+</div>
+```
+
+- [ ] **Step 3: Add showDefinition() function and call it from finishGame()**
+
+In the `<script>` block, find the `finishGame` function:
+
+```typescript
+function finishGame(won: boolean): void {
+  if (won) {
+    setMsg(`çözüldü — ${state.guesses.length}/6 🎉`);
+  } else {
+    setMsg(`kaybettin — kelime: ${target}`);
   }
-  return indices;
+  renderStreak();
+  shareBtn.hidden = false;
+}
+```
+
+Replace it with:
+
+```typescript
+function showDefinition(): void {
+  const def = getDefinition(target);
+  if (!def) return;
+  const el = document.getElementById('definition')!;
+  el.querySelector('.wl-def-word')!.textContent = target;
+  el.querySelector('.wl-def-text')!.textContent = def;
+  el.hidden = false;
 }
 
-const WORD_ORDER = seededShuffleIndices(WORDS.length, 20260101);
-
-export function getDailyWord(): string {
-  return WORDS[WORD_ORDER[dayIndex() % WORDS.length]];
-}
-
-const STORAGE_KEY = 'wordle-state';
-
-function freshState(): WordleState {
-  return {
-    date: todayStr(),
-    guesses: [],
-    results: [],
-    solved: false,
-    failed: false,
-    hintUsed: false,
-    streak: 0,
-    lastWin: '',
-  };
-}
-
-export function loadState(): WordleState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return freshState();
-    const s = JSON.parse(raw) as WordleState;
-    if (s.date !== todayStr()) {
-      const streak = s.lastWin === yesterdayStr() ? s.streak : 0;
-      const next = freshState();
-      next.streak = streak;
-      return next;
-    }
-    return s;
-  } catch {
-    return freshState();
+function finishGame(won: boolean): void {
+  if (won) {
+    setMsg(`çözüldü — ${state.guesses.length}/6 🎉`);
+  } else {
+    setMsg(`kaybettin — kelime: ${target}`);
   }
+  renderStreak();
+  shareBtn.hidden = false;
+  showDefinition();
+}
+```
+
+- [ ] **Step 4: Add CSS for the definition card**
+
+In the `<style>` block, find the `.wl-msg` rule:
+
+```css
+.wl-msg {
+  min-height: 1.4rem;
+  color: var(--fg-bright);
+  text-align: center;
+}
+```
+
+Add the following immediately after it:
+
+```css
+.wl-definition {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border: 1px solid var(--fg-muted);
+  padding: 0.75rem 1.25rem;
+  max-width: 28rem;
+  width: 100%;
 }
 
-export function saveState(state: WordleState): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch { /* ignore */ }
+.wl-def-word {
+  color: var(--fg-bright);
+  font-size: 1rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }
 
-export function isValidGuess(word: string): boolean {
-  return WORD_SET.has(word.toUpperCase());
+.wl-def-text {
+  color: var(--fg-dim);
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
+```
 
-// Correct Wordle evaluation handling duplicate letters.
-export function evaluateGuess(guess: string, target: string): GuessResult[] {
-  const g = guess.toUpperCase();
-  const t = target.toUpperCase();
-  const result: GuessResult[] = new Array(5).fill('absent');
-  const remaining: Record<string, number> = {};
+- [ ] **Step 5: Verify in the browser**
 
-  for (let i = 0; i < 5; i++) {
-    if (g[i] === t[i]) {
-      result[i] = 'correct';
-    } else {
-      remaining[t[i]] = (remaining[t[i]] ?? 0) + 1;
-    }
-  }
+Run the dev server:
 
-  for (let i = 0; i < 5; i++) {
-    if (result[i] === 'correct') continue;
-    const ch = g[i];
-    if (remaining[ch]) {
-      result[i] = 'present';
-      remaining[ch]--;
-    }
-  }
+```
+npm run dev
+```
 
-  return result;
-}
+Open `http://localhost:4321/wordle`. Play a game to completion (win or lose). The definition card should appear below the result message with the word in bright text and the definition in dimmer text. Test that a restored finished game (reload the page after completing) also shows the definition.
 
-export function buildShareText(state: WordleState, day: number): string {
-  const header = state.solved
-    ? `Security Wordle #${day} ${state.guesses.length}/6`
-    : `Security Wordle #${day} X/6`;
-  const rows = state.results.map(r =>
-    r.map(v => v === 'correct' ? '🟩' : v === 'present' ? '🟨' : '⬛').join('')
-  );
-  return [header, '', ...rows, '', 'pgah.github.io/wordle'].join('\n');
-}
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/pages/wordle.astro
+git commit -m "feat: show word definition card after wordle game ends"
+```
+
+---
+
+## Self-Review
+
+**Spec coverage:**
+- Definition for all 365 words ✓ (Task 1, DEFINITIONS object)
+- `getDefinition` exported ✓ (Task 1)
+- Card shown on win and loss ✓ (Task 2, `finishGame` calls `showDefinition`)
+- Restored games show definition ✓ (`restore()` calls `finishGame()` which calls `showDefinition()`)
+- No external API calls ✓ (all definitions hardcoded)
+- Styling uses CSS custom properties ✓
+
+**Placeholder scan:** No TBDs, no "implement later", no "similar to" references. All code blocks are complete.
+
+**Type consistency:** `getDefinition(word: string): string | null` — defined in Task 1, consumed in Task 2 as `getDefinition(target)` where `target` is already typed as `string`.
