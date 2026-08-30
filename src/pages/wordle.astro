@@ -180,6 +180,11 @@ const keyRows = [
       shake();
       return;
     }
+    if (state.guesses.includes(currentGuess)) {
+      setMsg('bu kelimeyi zaten denedin');
+      shake();
+      return;
+    }
 
     const result = evaluateGuess(currentGuess, target);
     state.guesses.push(currentGuess);
