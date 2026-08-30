@@ -1,6 +1,6 @@
 ---
 title: "How Certificates & PKI Work"
-date: 2026-08-31
+date: 2026-08-29
 description: "TLS uses certificates to prove identity, but never explains what's actually inside one, how it's requested, or what happens when it needs to be revoked before it expires. This is the machinery behind the padlock."
 tags: ["pki", "certificates", "cryptography", "tls"]
 ---

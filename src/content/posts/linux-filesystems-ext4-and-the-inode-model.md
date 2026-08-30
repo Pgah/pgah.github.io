@@ -1,6 +1,6 @@
 ---
 title: "Linux Filesystems: ext4 and the Inode Model"
-date: 2026-08-31
+date: 2026-08-26
 description: "A filename is not a file. It is a label pointing at an inode, and the inode is where the real bookkeeping happens. Understanding that split explains hard links, journaling, and why deleting a file doesn't always free the disk space."
 tags: ["linux", "filesystems", "fundamentals", "ext4"]
 ---
