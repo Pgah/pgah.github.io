@@ -21,7 +21,7 @@ Frontmatter şeması (`src/content.config.ts`): `title`, `date` (bare YYYY-MM-DD
 | 3 | 2026-08-20 | How Git Works: Objects, Refs, and the DAG ✅ yayında | Git (yeni seri) | — (yeni seri açılışı) | git, fundamentals, version-control |
 | 4 | 2026-08-23 | How Databases Work ✅ yayında | Web/Backend (yeni seri) | — (yeni seri açılışı) | databases, backend, fundamentals |
 | 5 | 2026-08-26 | Linux Filesystems: ext4 and the Inode Model ✅ yayında | Linux | the-architecture-of-linux, linux-file-permissions | linux, filesystems, fundamentals |
-| 6 | 2026-08-29 | How Certificates & PKI Work | Networking/Crypto | how-tls-works, how-ssh-works | pki, certificates, cryptography, tls |
+| 6 | 2026-08-29 | How Certificates & PKI Work ✅ yayında | Networking/Crypto | how-tls-works, how-ssh-works | pki, certificates, cryptography, tls |
 | 7 | 2026-09-01 | Git Branching, Merging, and Rebasing | Git | how-git-works (#3) | git, workflow, version-control |
 | 8 | 2026-09-04 | How Web Servers Work | Web/Backend | how-http-works, how-databases-work (#4) | web-servers, http, backend |
 | 9 | 2026-09-07 | Cron & systemd Timers | Linux | how-systemd-works | linux, systemd, automation |
