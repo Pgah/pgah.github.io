@@ -11,19 +11,19 @@ const keyRows = [
 ];
 ---
 
-<BaseLayout title="wordle" description="Günlük Security Wordle — 5 harfli siber güvenlik terimini tahmin et">
+<BaseLayout title="wordle" description="Daily Security Wordle — guess the 5-letter cybersecurity term">
   <Prompt command="./wordle --daily" />
 
   <section class="wl">
     <p class="wl-intro">
-      Günün 5 harfli siber güvenlik terimini <strong>6 denemede</strong> bul.
-      Her tahminden sonra kutucuklar renk değiştirir:
+      Guess today's 5-letter cybersecurity term in <strong>6 tries</strong>.
+      After each guess, the tiles change color:
     </p>
 
     <ul class="wl-legend">
-      <li><span class="chip correct">A</span> doğru harf, doğru yer</li>
-      <li><span class="chip present">B</span> harf var ama yeri yanlış</li>
-      <li><span class="chip absent">C</span> harf kelimede yok</li>
+      <li><span class="chip correct">A</span> correct letter, correct spot</li>
+      <li><span class="chip present">B</span> letter is in the word, wrong spot</li>
+      <li><span class="chip absent">C</span> letter is not in the word</li>
     </ul>
 
     <div class="wl-grid" id="grid">
@@ -59,7 +59,7 @@ const keyRows = [
 
     <div class="wl-footer">
       <span id="streak" class="wl-streak"></span>
-      <button id="share" class="wl-share" type="button" hidden>paylaş</button>
+      <button id="share" class="wl-share" type="button" hidden>share</button>
     </div>
   </section>
 </BaseLayout>
@@ -119,7 +119,7 @@ const keyRows = [
   }
 
   function renderStreak(): void {
-    streakEl.textContent = state.streak > 0 ? `seri: ${state.streak} 🔥` : '';
+    streakEl.textContent = state.streak > 0 ? `streak: ${state.streak} 🔥` : '';
   }
 
   function showDefinition(): void {
@@ -133,9 +133,9 @@ const keyRows = [
 
   function finishGame(won: boolean): void {
     if (won) {
-      setMsg(`çözüldü — ${state.guesses.length}/6 🎉`);
+      setMsg(`solved — ${state.guesses.length}/6 🎉`);
     } else {
-      setMsg(`kaybettin — kelime: ${target}`);
+      setMsg(`you lost — word: ${target}`);
     }
     renderStreak();
     shareBtn.hidden = false;
@@ -171,17 +171,17 @@ const keyRows = [
 
   function submitGuess(): void {
     if (currentGuess.length < 5) {
-      setMsg('5 harf gerekli');
+      setMsg('5 letters required');
       shake();
       return;
     }
     if (!isValidGuess(currentGuess)) {
-      setMsg('listede yok');
+      setMsg('not in word list');
       shake();
       return;
     }
     if (state.guesses.includes(currentGuess)) {
-      setMsg('bu kelimeyi zaten denedin');
+      setMsg('you already tried this word');
       shake();
       return;
     }
@@ -244,9 +244,9 @@ const keyRows = [
     const text = buildShareText(state, dayIndex());
     try {
       await navigator.clipboard.writeText(text);
-      setMsg('sonuç panoya kopyalandı');
+      setMsg('result copied to clipboard');
     } catch {
-      setMsg('kopyalanamadı');
+      setMsg('copy failed');
     }
   });
 
