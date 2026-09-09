@@ -24,7 +24,7 @@ Frontmatter şeması (`src/content.config.ts`): `title`, `date` (bare YYYY-MM-DD
 | 6 | 2026-08-29 | How Certificates & PKI Work ✅ yayında | Networking/Crypto | how-tls-works, how-ssh-works | pki, certificates, cryptography, tls |
 | 7 | 2026-09-02 | Git Branching, Merging, and Rebasing ✅ yayında | Git | how-git-works (#3) | git, workflow, version-control |
 | 8 | 2026-09-04 | How Web Servers Work ✅ yayında | Web/Backend | how-http-works, how-databases-work (#4) | web-servers, http, backend |
-| 9 | 2026-09-07 | Cron & systemd Timers | Linux | how-systemd-works | linux, systemd, automation |
+| 9 | 2026-09-07 | Cron & systemd Timers ✅ yayında | Linux | how-systemd-works | linux, systemd, automation |
 | 10 | 2026-09-10 | How Caching Works | Web/Backend | how-web-servers-work (#8), how-http-works | caching, performance, backend, cdn |
 
 ## Neden Bu 10 Konu / Bu Sıra
