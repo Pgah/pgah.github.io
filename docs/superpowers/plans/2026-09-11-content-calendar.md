@@ -14,8 +14,8 @@ Frontmatter şeması (`src/content.config.ts`): `title`, `date` (bare YYYY-MM-DD
 
 | # | Tarih | Başlık | Seri | Bağlandığı makaleler | Önerilen tag'ler |
 |---|-------|--------|------|----------------------|-------------------|
-| 1 | 2026-09-17 | How Load Balancing Works | Networking/Backend | how-web-servers-work, how-nat-works | load-balancing, networking, backend, fundamentals |
-| 2 | 2026-09-24 | How Containers Work: Namespaces & cgroups | Linux | linux-processes-and-signals, how-systemd-works, cron-and-systemd-timers | linux, containers, cgroups, fundamentals |
+| 1 | 2026-10-17 | How Load Balancing Works ✅ yayında | Networking/Backend | how-web-servers-work, how-nat-works | load-balancing, networking, backend, fundamentals |
+| 2 | 2026-10-17 | How Containers Work: Namespaces & cgroups ✅ yayında | Linux | linux-processes-and-signals, how-systemd-works, cron-and-systemd-timers | linux, containers, cgroups, fundamentals |
 | 3 | 2026-10-01 | Git Internals: Packfiles & Garbage Collection | Git | how-git-works | git, internals, version-control |
 | 4 | 2026-10-08 | How Authentication Works: Sessions, Tokens, and OAuth | Web/Backend | how-http-works, how-tls-works | authentication, security, backend, web |
 | 5 | 2026-10-15 | How VPNs Work | Networking/Crypto | how-tls-works, how-ssh-works, how-nat-works | vpn, networking, cryptography, security |
